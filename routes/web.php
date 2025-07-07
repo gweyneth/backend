@@ -39,3 +39,6 @@ Route::resource('gaji',GajiKaryawanController::class);
 Route::singleton('perusahaan', PerusahaanController::class);
 Route::resource('rekening', RekeningController::class);
 Route::get('gaji/{id}/print', [GajiKaryawanController::class, 'print'])->name('gaji.print');
+Route::get('transaksi/get-product-details', [TransaksiController::class, 'getProductDetails'])->name('transaksi.get-product-details');
+Route::get('transaksi/get-produk-item-row', [TransaksiController::class, 'getProdukItemRow'])->name('transaksi.get-produk-item-row');
+Route::resource('transaksi', TransaksiController::class);

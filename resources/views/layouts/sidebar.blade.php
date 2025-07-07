@@ -78,7 +78,7 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="#" class="nav-link {{ Request::is('transaksi') ? 'active' : '' }}">
+                            <a href="{{ route('transaksi.index') }}" class="nav-link {{ Request::is('transaksi') ? 'active' : '' }}">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Data Transaksi</p>
                             </a>

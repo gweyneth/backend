@@ -114,8 +114,7 @@ class ProdukController extends Controller
      */
      public function show(string $id)
     {
-        // Temukan produk berdasarkan ID, dan eager load semua relasi
-        // Ini penting agar data relasi (bahan, kategori, satuan) ikut terkirim ke modal
+        
         $produk = Produk::with(['bahan', 'kategori', 'satuan'])->find($id);
 
         if (!$produk) {
@@ -123,7 +122,7 @@ class ProdukController extends Controller
             return response()->json(['message' => 'Produk tidak ditemukan.'], 404);
         }
 
-        // Mengembalikan data produk dalam format JSON
+       
         return response()->json($produk);
     }
 
@@ -149,7 +148,7 @@ class ProdukController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        // Temukan produk yang akan diupdate
+        
         $produk = Produk::findOrFail($id);
 
         // 1. Validasi Data
