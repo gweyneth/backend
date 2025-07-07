@@ -23,7 +23,7 @@ class RekeningController extends Controller
    
     public function store(Request $request)
     {
-        // Validasi data yang masuk dari form
+        
         $request->validate([
             'nomor_rekening' => 'required|string|max:255|unique:rekening,nomor_rekening', // Nomor rekening harus unik
             'atas_nama' => 'required|string|max:255',

@@ -12,7 +12,6 @@ use Illuminate\Validation\ValidationException; // Import untuk menangkap Validat
 
 class TransaksiController extends Controller
 {
-   
     public function index(Request $request)
     {
         $query = Transaksi::with(['pelanggan'])->latest();
@@ -52,11 +51,11 @@ class TransaksiController extends Controller
         ));
     }
 
-    
     public function create()
     {
         $latestTransaksi = Transaksi::latest()->first();
         $nextNoTransaksi = $this->generateNoTransaksi($latestTransaksi ? $latestTransaksi->no_transaksi : null);
+
         $pelanggan = Pelanggan::all();
         $produks = Produk::with(['bahan', 'satuan'])->get();
 
@@ -67,10 +66,36 @@ class TransaksiController extends Controller
         ));
     }
 
+
     public function store(Request $request)
     {
 
         try {
+
+            $request->merge([
+                'total_keseluruhan' => (float) str_replace(['Rp ', '.'], '', $request->input('total_keseluruhan')),
+                'uang_muka' => (float) str_replace(['Rp ', '.'], '', $request->input('uang_muka')),
+                'diskon' => (float) str_replace(['Rp ', '.'], '', $request->input('diskon')),
+                'sisa' => (float) str_replace(['Rp ', '.'], '', $request->input('sisa')),
+            ]);
+
+
+            if ($request->has('harga') && is_array($request->input('harga'))) {
+                $cleanedHarga = [];
+                foreach ($request->input('harga') as $key => $value) {
+                    $cleanedHarga[$key] = (float) str_replace(['Rp ', '.'], '', $value);
+                }
+                $request->merge(['harga' => $cleanedHarga]);
+            }
+
+            if ($request->has('total_item') && is_array($request->input('total_item'))) {
+                $cleanedTotalItem = [];
+                foreach ($request->input('total_item') as $key => $value) {
+                    $cleanedTotalItem[$key] = (float) str_replace(['Rp ', '.'], '', $value);
+                }
+                $request->merge(['total_item' => $cleanedTotalItem]);
+            }
+
             $validatedTransaksi = $request->validate([
                 'no_transaksi' => 'required|string|unique:transaksi,no_transaksi|max:255',
                 'pelanggan_id' => 'nullable|exists:pelanggan,id',
@@ -83,7 +108,7 @@ class TransaksiController extends Controller
                 'status_pengerjaan' => 'required|in:menunggu export,belum dikerjakan,proses desain,proses produksi,selesai',
             ]);
 
-           
+
             $request->validate([
                 'produk_id.*' => 'nullable|exists:produk,id',
                 'nama_produk.*' => 'required|string|max:255',
@@ -98,11 +123,10 @@ class TransaksiController extends Controller
 
             DB::beginTransaction();
 
-            
+
             $sisaPembayaran = ($validatedTransaksi['total_keseluruhan'] - ($validatedTransaksi['uang_muka'] ?? 0) - ($validatedTransaksi['diskon'] ?? 0));
             if ($sisaPembayaran < 0) $sisaPembayaran = 0;
 
-           
             $transaksi = Transaksi::create([
                 'no_transaksi' => $validatedTransaksi['no_transaksi'],
                 'pelanggan_id' => $validatedTransaksi['pelanggan_id'],
@@ -116,7 +140,6 @@ class TransaksiController extends Controller
                 'status_pengerjaan' => $validatedTransaksi['status_pengerjaan'],
             ]);
 
-           
             if ($request->has('nama_produk') && is_array($request->input('nama_produk'))) {
                 foreach ($request->input('nama_produk') as $key => $nama_produk) {
                     TransaksiDetail::create([
@@ -134,28 +157,24 @@ class TransaksiController extends Controller
                 }
             }
 
-            DB::commit(); 
-            return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil disimpan!');
 
+            DB::commit();
+            return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil disimpan!');
         } catch (ValidationException $e) {
-           
-            DB::rollBack(); 
+            DB::rollBack();
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
-            DB::rollBack(); 
+            DB::rollBack();
             dd($e->getMessage());
-            return redirect()->back()->withInput()->with('error', 'Gagal menyimpan transaksi: ' . $e->getMessage());
         }
     }
 
-    
     public function show(int $id)
     {
         $transaksi = Transaksi::with(['pelanggan', 'transaksiDetails.produk'])->findOrFail($id);
         return view('pages.transaksi.show', compact('transaksi'));
     }
 
-   
     public function edit(int $id)
     {
         $transaksi = Transaksi::with('transaksiDetails')->findOrFail($id);
@@ -170,6 +189,29 @@ class TransaksiController extends Controller
         $transaksi = Transaksi::findOrFail($id);
 
         try {
+            $request->merge([
+                'total_keseluruhan' => (float) str_replace(['Rp ', '.'], '', $request->input('total_keseluruhan')),
+                'uang_muka' => (float) str_replace(['Rp ', '.'], '', $request->input('uang_muka')),
+                'diskon' => (float) str_replace(['Rp ', '.'], '', $request->input('diskon')),
+                'sisa' => (float) str_replace(['Rp ', '.'], '', $request->input('sisa')),
+            ]);
+
+            if ($request->has('harga') && is_array($request->input('harga'))) {
+                $cleanedHarga = [];
+                foreach ($request->input('harga') as $key => $value) {
+                    $cleanedHarga[$key] = (float) str_replace(['Rp ', '.'], '', $value);
+                }
+                $request->merge(['harga' => $cleanedHarga]);
+            }
+
+            if ($request->has('total_item') && is_array($request->input('total_item'))) {
+                $cleanedTotalItem = [];
+                foreach ($request->input('total_item') as $key => $value) {
+                    $cleanedTotalItem[$key] = (float) str_replace(['Rp ', '.'], '', $value);
+                }
+                $request->merge(['total_item' => $cleanedTotalItem]);
+            }
+          
             $validatedTransaksi = $request->validate([
                 'no_transaksi' => 'required|string|max:255|unique:transaksi,no_transaksi,' . $transaksi->id,
                 'pelanggan_id' => 'nullable|exists:pelanggan,id',
@@ -208,9 +250,11 @@ class TransaksiController extends Controller
                 'uang_muka' => $validatedTransaksi['uang_muka'] ?? 0,
                 'diskon' => $validatedTransaksi['diskon'] ?? 0,
                 'sisa' => $sisaPembayaran,
+                'id_pelunasan' => $validatedTransaksi['id_pelunasan'],
                 'status_pengerjaan' => $validatedTransaksi['status_pengerjaan'],
             ]);
 
+           
             $transaksi->transaksiDetails()->delete();
 
             if ($request->has('nama_produk') && is_array($request->input('nama_produk'))) {
@@ -229,19 +273,25 @@ class TransaksiController extends Controller
                     ]);
                 }
             }
+
             DB::commit();
             return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil diperbarui!');
-
         } catch (ValidationException $e) {
             DB::rollBack();
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->withInput()->with('error', 'Gagal memperbarui transaksi: ' . $e->getMessage());
+            dd($e->getMessage()); 
+           
         }
     }
 
-   
+    /**
+     * Menghapus transaksi tertentu dari database.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function destroy(int $id)
     {
         $transaksi = Transaksi::findOrFail($id);
@@ -251,26 +301,24 @@ class TransaksiController extends Controller
         return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil dihapus!');
     }
 
-   
     public function getProductDetails(Request $request)
     {
         $produkId = $request->input('produk_id');
-        $produkName = $request->input('nama_produk'); // Sesuaikan dengan nama input di form
+        $produkName = $request->input('nama_produk'); 
 
         $produk = null;
         if ($produkId) {
             $produk = Produk::with(['bahan', 'satuan'])->find($produkId);
         } elseif ($produkName) {
-            // Menggunakan 'nama' untuk mencari produk
             $produk = Produk::with(['bahan', 'satuan'])->where('nama', $produkName)->first();
         }
 
         if ($produk) {
             return response()->json([
-                'nama_produk' => $produk->nama, // Menggunakan nama
-                'bahan' => $produk->bahan->nama ?? '', // Menggunakan nama bahan dari relasi
+                'nama_produk' => $produk->nama,
+                'bahan' => $produk->bahan->nama ?? '', 
                 'ukuran' => $produk->ukuran,
-                'satuan' => $produk->satuan->nama ?? '', // Menggunakan nama satuan dari relasi
+                'satuan' => $produk->satuan->nama ?? '', 
                 'harga' => $produk->harga_jual,
             ]);
         }
@@ -278,16 +326,15 @@ class TransaksiController extends Controller
         return response()->json(null, 404);
     }
 
-   
     public function getProdukItemRow(Request $request)
     {
         $index = $request->input('index');
+     
         $produks = Produk::with(['bahan', 'satuan'])->get();
 
-        return view('pages.transaksi.produk_item_row', compact('index', 'produks'));
+        return view('pages.transaksi._produk_item_row', compact('index', 'produks'));
     }
 
-    
     private function generateNoTransaksi(?string $lastNoTransaksi): string
     {
         $prefix = 'KRP';

@@ -19,9 +19,10 @@
     <div class="col-md-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title">Transaksi Baru dengan No Transaksi #{{ $nextNoTransaksi }}</h5>
+                <h5 class="card-title">Transaksi Baru #{{ $nextNoTransaksi }}</h5>
             </div>
             <div class="card-body">
+                {{-- Menampilkan pesan sukses --}}
                 @if(session('success'))
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         {{ session('success') }}
@@ -31,6 +32,7 @@
                     </div>
                 @endif
 
+                {{-- Menampilkan pesan error umum --}}
                 @if(session('error'))
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         {{ session('error') }}
@@ -52,7 +54,9 @@
                                 <select name="pelanggan_id" id="pelanggan_id" class="form-control @error('pelanggan_id') is-invalid @enderror">
                                     <option value="">Pilih Pelanggan</option>
                                     @foreach ($pelanggan as $item)
-                                        <option value="{{ $item->id }}" data-alamat="{{ $item->alamat }}" data-telp="{{ $item->no_hp}}" {{ old('pelanggan_id') == $item->id ? 'selected' : '' }}>
+                                        {{-- Menggunakan $item->nama sesuai klarifikasi database --}}
+                                        {{-- Menggunakan $item->no_hp sesuai klarifikasi terbaru --}}
+                                        <option value="{{ $item->id }}" data-alamat="{{ $item->alamat }}" data-telp="{{ $item->no_hp }}" {{ old('pelanggan_id') == $item->id ? 'selected' : '' }}>
                                             {{ $item->nama }}
                                         </option>
                                     @endforeach
@@ -87,10 +91,14 @@
                                 @enderror
                             </div>
                         </div>
-                      
+
+                        {{-- Kolom Kanan: Detail Produk Transaksi --}}
                         <div class="col-md-6">
                             <h6>Detail Produk</h6>
                             <div id="produk-items-container">
+                                {{-- Baris produk akan ditambahkan di sini oleh JavaScript --}}
+                                {{-- Baris pertama di-include langsung saat halaman dimuat --}}
+                                {{-- Menggunakan nama partial yang diklarifikasi: produk_item_row (tanpa underscore) --}}
                                 @include('pages.transaksi.produk_item_row', ['index' => 0, 'produks' => $produks])
                             </div>
                             <button type="button" class="btn btn-success btn-sm mt-2" id="add-produk-item">Tambah Baris Produk</button>
@@ -122,6 +130,15 @@
                                 <label for="sisa">Sisa Pembayaran</label>
                                 <input type="text" name="sisa" id="sisa" class="form-control" value="{{ old('sisa', 0) }}" readonly>
                             </div>
+
+                            <div class="form-group">
+                                <label for="id_pelunasan">ID Pelunasan</label>
+                                <input type="text" name="id_pelunasan" id="id_pelunasan" class="form-control @error('id_pelunasan') is-invalid @enderror" value="{{ old('id_pelunasan') }}">
+                                @error('id_pelunasan')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
                             <div class="form-group">
                                 <label for="status_pengerjaan">Status Pengerjaan</label>
                                 <select name="status_pengerjaan" id="status_pengerjaan" class="form-control @error('status_pengerjaan') is-invalid @enderror" required>
@@ -157,9 +174,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
 <script>
+    // Inisialisasi indeks produk, menggunakan PHP untuk nilai awal
     let produkItemIndex = {{ old('nama_produk') ? count(old('nama_produk')) : 1 }};
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Inisialisasi data pelanggan jika ada old input
         const pelangganSelect = document.getElementById('pelanggan_id');
         const alamatPelangganInput = document.getElementById('alamat_pelanggan');
         const telpPelangganInput = document.getElementById('telp_pelanggan');
@@ -176,6 +195,7 @@
         }
 
         pelangganSelect.addEventListener('change', updatePelangganInfo);
+        // Panggil saat DOMContentLoaded untuk mengisi data jika ada old input
         updatePelangganInfo();
 
         // Fungsi untuk format Rupiah
@@ -189,9 +209,11 @@
             return 'Rp ' + ribuan;
         }
 
+        // Fungsi untuk menghitung total keseluruhan dan sisa pembayaran
         function calculateGrandTotalAndRemaining() {
             let grandTotal = 0;
             document.querySelectorAll('.item-total').forEach(function(element) {
+                // Ambil nilai numerik dari input (tanpa format Rupiah)
                 grandTotal += parseFloat(element.value.replace(/[^0-9,-]+/g,"").replace(",", ".")) || 0;
             });
 
@@ -201,7 +223,7 @@
             const diskon = parseFloat(document.getElementById('diskon').value) || 0;
 
             let sisa = grandTotal - uangMuka - diskon;
-            if (sisa < 0) sisa = 0; 
+            if (sisa < 0) sisa = 0; // Pastikan sisa tidak negatif
 
             document.getElementById('sisa').value = formatRupiah(sisa);
         }
@@ -211,11 +233,14 @@
         document.getElementById('diskon').addEventListener('input', calculateGrandTotalAndRemaining);
 
 
+        // Fungsi untuk menambahkan baris produk baru
         document.getElementById('add-produk-item').addEventListener('click', function() {
             const container = document.getElementById('produk-items-container');
+            // Mengubah URL fetch agar konsisten dengan nama partial yang diklarifikasi
             fetch('/transaksi/get-produk-item-row?index=' + produkItemIndex)
                 .then(response => {
                     if (!response.ok) {
+                        // Jika respons tidak OK (misal status 4xx atau 5xx), lempar error
                         return response.text().then(text => { throw new Error(text) });
                     }
                     return response.text();
@@ -243,12 +268,11 @@
             }
         });
 
-        
+        // Fungsi untuk menginisialisasi event listener pada baris produk
         function initializeProdukRow(index) {
             const row = document.querySelector(`.produk-item[data-index="${index}"]`);
             if (!row) return;
 
-            
             const produkSelect = row.querySelector('.produk-name');
             const produkIdInput = row.querySelector('.produk-id');
             const produkBahanInput = row.querySelector('.produk-bahan');
@@ -258,7 +282,7 @@
             const itemPriceInput = row.querySelector('.item-price');
             const itemTotalInput = row.querySelector('.item-total');
 
-          
+            // Event listener untuk perubahan pilihan produk di select
             produkSelect.addEventListener('change', function() {
                 const selectedOption = this.options[this.selectedIndex];
                 if (selectedOption && selectedOption.value) { // Pastikan opsi dipilih dan bukan "Pilih Produk"

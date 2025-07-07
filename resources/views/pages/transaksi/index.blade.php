@@ -87,7 +87,7 @@
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
                                 <td>{{ $item->no_transaksi }}</td>
-                                <td>{{ $item->pelanggan->nama_pelanggan ?? 'Umum' }}</td>
+                                <td>{{ $item->pelanggan->nama ?? 'Umum' }}</td>
                                 <td>{{ $item->tanggal_order->format('d/m/Y') }}</td>
                                 <td>Rp{{ number_format($item->total, 2, ',', '.') }}</td>
                                 <td>Rp{{ number_format($item->uang_muka, 2, ',', '.') }}</td>
