@@ -352,4 +352,17 @@ class TransaksiController extends Controller
 
         return $prefix . $datePart . '-' . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
     }
+
+    public function piutangIndex()
+    {
+        $piutangTransaksi = Transaksi::with('pelanggan')
+                                    ->where('sisa', '>', 0)
+                                    ->latest()
+                                    ->get();
+
+    
+        $totalPiutang = $piutangTransaksi->sum('sisa');
+
+        return view('pages.piutang.index', compact('piutangTransaksi', 'totalPiutang'));
+    }
 }

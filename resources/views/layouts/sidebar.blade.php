@@ -115,7 +115,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="#" class="nav-link {{ Request::is('laporan/piutang') ? 'active' : '' }}">
+                            <a href="{{ route('piutang.index') }}" class="nav-link {{ Request::is('laporan/piutang') ? 'active' : '' }}">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Piutang Penjualan</p>
                             </a>

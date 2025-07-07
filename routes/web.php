@@ -42,3 +42,4 @@ Route::get('gaji/{id}/print', [GajiKaryawanController::class, 'print'])->name('g
 Route::get('transaksi/get-product-details', [TransaksiController::class, 'getProductDetails'])->name('transaksi.get-product-details');
 Route::get('transaksi/get-produk-item-row', [TransaksiController::class, 'getProdukItemRow'])->name('transaksi.get-produk-item-row');
 Route::resource('transaksi', TransaksiController::class);
+Route::get('piutang', [TransaksiController::class, 'piutangIndex'])->name('piutang.index');
