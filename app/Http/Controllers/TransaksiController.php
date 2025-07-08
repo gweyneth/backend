@@ -110,7 +110,6 @@ class TransaksiController extends Controller
                 'total_keseluruhan' => 'required|numeric|min:0',
                 'uang_muka' => 'nullable|numeric|min:0',
                 'diskon' => 'nullable|numeric|min:0',
-                'id_pelunasan' => 'nullable|string|max:255',
                 'status_pengerjaan' => 'required|in:menunggu export,belum dikerjakan,proses desain,proses produksi,selesai',
             ]);
 
@@ -140,7 +139,6 @@ class TransaksiController extends Controller
                 'uang_muka' => $validatedTransaksi['uang_muka'] ?? 0,
                 'diskon' => $validatedTransaksi['diskon'] ?? 0,
                 'sisa' => $sisaPembayaran,
-                'id_pelunasan' => $validatedTransaksi['id_pelunasan'],
                 'status_pengerjaan' => $validatedTransaksi['status_pengerjaan'],
             ]);
 
@@ -227,7 +225,6 @@ class TransaksiController extends Controller
                 'total_keseluruhan' => 'required|numeric|min:0',
                 'uang_muka' => 'nullable|numeric|min:0',
                 'diskon' => 'nullable|numeric|min:0',
-                'id_pelunasan' => 'nullable|string|max:255',
                 'status_pengerjaan' => 'required|in:menunggu export,belum dikerjakan,proses desain,proses produksi,selesai',
             ]);
 
@@ -257,7 +254,6 @@ class TransaksiController extends Controller
                 'uang_muka' => $validatedTransaksi['uang_muka'] ?? 0,
                 'diskon' => $validatedTransaksi['diskon'] ?? 0,
                 'sisa' => $sisaPembayaran,
-                'id_pelunasan' => $validatedTransaksi['id_pelunasan'],
                 'status_pengerjaan' => $validatedTransaksi['status_pengerjaan'],
             ]);
 

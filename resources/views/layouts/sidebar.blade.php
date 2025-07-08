@@ -120,12 +120,6 @@
                                 <p>Piutang Penjualan</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="#" class="nav-link {{ Request::is('laporan/log') ? 'active' : '' }}">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Log Transaksi</p>
-                            </a>
-                        </li>
                     </ul>
                 </li>
 

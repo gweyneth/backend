@@ -141,14 +141,6 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="id_pelunasan">ID Pelunasan</label>
-                                <input type="text" name="id_pelunasan" id="id_pelunasan" class="form-control @error('id_pelunasan') is-invalid @enderror" value="{{ old('id_pelunasan', $transaksi->id_pelunasan) }}">
-                                @error('id_pelunasan')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="form-group">
                                 <label for="status_pengerjaan">Status Pengerjaan</label>
                                 <select name="status_pengerjaan" id="status_pengerjaan" class="form-control @error('status_pengerjaan') is-invalid @enderror" required>
                                     <option value="menunggu export" {{ old('status_pengerjaan', $transaksi->status_pengerjaan) == 'menunggu export' ? 'selected' : '' }}>Menunggu Export</option>

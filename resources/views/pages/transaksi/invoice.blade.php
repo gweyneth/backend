@@ -216,7 +216,7 @@
                     </td>
                     <td>{{ $detail->keterangan ?? '-' }}</td>
                     <td>{{ $detail->qty }}</td>
-                    <td>Rp{{ number_format($detail->harga, 0, ',', '.') }}</td>
+                    <td>Rp{{ number_format($detail->harga, 0, ',', '.') }}</td><br>
                     <td>Rp{{ number_format($detail->total, 0, ',', '.') }}</td>
                 </tr>
                 @endforeach
