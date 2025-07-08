@@ -5,13 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\Transaksi;
 use App\Models\TransaksiDetail;
 use App\Models\Pelanggan;
-use App\Models\Produk; // Menggunakan model Produk
+use App\Models\Produk;
+use App\Models\Rekening;
+use App\Models\Perusahaan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException; // Import untuk menangkap ValidationException
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Storage;
+use Dompdf\Dompdf;
+use Dompdf\Options;
+use Laravel\Pail\Options as PailOptions;
 
 class TransaksiController extends Controller
 {
+   
     public function index(Request $request)
     {
         $query = Transaksi::with(['pelanggan'])->latest();
@@ -40,6 +47,8 @@ class TransaksiController extends Controller
         $totalPiutang = $transaksi->sum('sisa');
         $totalKeseluruhanTransaksi = $transaksi->sum('total');
 
+        $rekening = Rekening::all();
+
         return view('pages.transaksi.index', compact(
             'transaksi',
             'totalUangMuka',
@@ -47,7 +56,8 @@ class TransaksiController extends Controller
             'totalKeseluruhanTransaksi',
             'startDate',
             'endDate',
-            'searchQuery'
+            'searchQuery',
+            'rekening' 
         ));
     }
 
@@ -57,7 +67,7 @@ class TransaksiController extends Controller
         $nextNoTransaksi = $this->generateNoTransaksi($latestTransaksi ? $latestTransaksi->no_transaksi : null);
 
         $pelanggan = Pelanggan::all();
-        $produks = Produk::with(['bahan', 'satuan'])->get();
+        $produks = Produk::all();
 
         return view('pages.transaksi.create', compact(
             'nextNoTransaksi',
@@ -66,19 +76,15 @@ class TransaksiController extends Controller
         ));
     }
 
-
     public function store(Request $request)
     {
-
         try {
-
             $request->merge([
                 'total_keseluruhan' => (float) str_replace(['Rp ', '.'], '', $request->input('total_keseluruhan')),
                 'uang_muka' => (float) str_replace(['Rp ', '.'], '', $request->input('uang_muka')),
                 'diskon' => (float) str_replace(['Rp ', '.'], '', $request->input('diskon')),
                 'sisa' => (float) str_replace(['Rp ', '.'], '', $request->input('sisa')),
             ]);
-
 
             if ($request->has('harga') && is_array($request->input('harga'))) {
                 $cleanedHarga = [];
@@ -108,7 +114,6 @@ class TransaksiController extends Controller
                 'status_pengerjaan' => 'required|in:menunggu export,belum dikerjakan,proses desain,proses produksi,selesai',
             ]);
 
-
             $request->validate([
                 'produk_id.*' => 'nullable|exists:produk,id',
                 'nama_produk.*' => 'required|string|max:255',
@@ -122,7 +127,6 @@ class TransaksiController extends Controller
             ]);
 
             DB::beginTransaction();
-
 
             $sisaPembayaran = ($validatedTransaksi['total_keseluruhan'] - ($validatedTransaksi['uang_muka'] ?? 0) - ($validatedTransaksi['diskon'] ?? 0));
             if ($sisaPembayaran < 0) $sisaPembayaran = 0;
@@ -157,9 +161,9 @@ class TransaksiController extends Controller
                 }
             }
 
-
             DB::commit();
             return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil disimpan!');
+
         } catch (ValidationException $e) {
             DB::rollBack();
             return redirect()->back()->withErrors($e->errors())->withInput();
@@ -169,21 +173,24 @@ class TransaksiController extends Controller
         }
     }
 
+   
     public function show(int $id)
     {
         $transaksi = Transaksi::with(['pelanggan', 'transaksiDetails.produk'])->findOrFail($id);
         return view('pages.transaksi.show', compact('transaksi'));
     }
 
+   
     public function edit(int $id)
     {
         $transaksi = Transaksi::with('transaksiDetails')->findOrFail($id);
         $pelanggan = Pelanggan::all();
-        $produks = Produk::with(['bahan', 'satuan'])->get();
+        $produks = Produk::all();
 
         return view('pages.transaksi.edit', compact('transaksi', 'pelanggan', 'produks'));
     }
 
+    
     public function update(Request $request, int $id)
     {
         $transaksi = Transaksi::findOrFail($id);
@@ -211,7 +218,7 @@ class TransaksiController extends Controller
                 }
                 $request->merge(['total_item' => $cleanedTotalItem]);
             }
-          
+
             $validatedTransaksi = $request->validate([
                 'no_transaksi' => 'required|string|max:255|unique:transaksi,no_transaksi,' . $transaksi->id,
                 'pelanggan_id' => 'nullable|exists:pelanggan,id',
@@ -254,7 +261,6 @@ class TransaksiController extends Controller
                 'status_pengerjaan' => $validatedTransaksi['status_pengerjaan'],
             ]);
 
-           
             $transaksi->transaksiDetails()->delete();
 
             if ($request->has('nama_produk') && is_array($request->input('nama_produk'))) {
@@ -276,25 +282,93 @@ class TransaksiController extends Controller
 
             DB::commit();
             return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil diperbarui!');
+
         } catch (ValidationException $e) {
             DB::rollBack();
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
-            dd($e->getMessage()); 
-           
+            dd($e->getMessage());
         }
     }
 
-    /**
-     * Menghapus transaksi tertentu dari database.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
+   
+    public function pelunasan(Request $request, int $id)
+    {
+        $transaksi = Transaksi::findOrFail($id);
+
+        $validatedData = $request->validate([
+            'jumlah_bayar' => 'required|numeric|min:0',
+            'metode_pembayaran' => 'required|in:tunai,transfer_bank',
+            'rekening_id' => 'nullable|exists:rekening,id', 
+            'bukti_pembayaran' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', 
+            'keterangan_pembayaran' => 'nullable|string|max:500',
+            'id_pelunasan' => 'nullable|string|max:255',
+        ]);
+
+        if ($validatedData['metode_pembayaran'] === 'transfer_bank') {
+            $request->validate([
+                'rekening_id' => 'required|exists:rekening,id',
+                'bukti_pembayaran' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            ], [
+                'rekening_id.required' => 'Pilih rekening bank jika metode pembayaran adalah transfer.',
+                'bukti_pembayaran.required' => 'Bukti pembayaran wajib diunggah jika metode pembayaran adalah transfer.',
+                'bukti_pembayaran.image' => 'File bukti pembayaran harus berupa gambar.',
+                'bukti_pembayaran.mimes' => 'Format gambar yang diizinkan untuk bukti pembayaran: jpeg, png, jpg, gif.',
+                'bukti_pembayaran.max' => 'Ukuran gambar bukti pembayaran maksimal 2MB.',
+            ]);
+        }
+
+        $jumlahBayar = $validatedData['jumlah_bayar'];
+        $idPelunasan = $validatedData['id_pelunasan'] ?? null;
+
+        if (($transaksi->uang_muka + $jumlahBayar) > $transaksi->total) {
+            return redirect()->back()->with('error', 'Jumlah pembayaran melebihi total transaksi.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $newUangMuka = $transaksi->uang_muka + $jumlahBayar;
+            $newSisa = $transaksi->total - $newUangMuka - $transaksi->diskon;
+            if ($newSisa < 0) $newSisa = 0; 
+
+            $pathBuktiPembayaran = $transaksi->bukti_pembayaran;
+           
+            if ($request->hasFile('bukti_pembayaran')) {
+                // Hapus bukti pembayaran lama jika ada
+                if ($transaksi->bukti_pembayaran && Storage::disk('public')->exists($transaksi->bukti_pembayaran)) {
+                    Storage::disk('public')->delete($transaksi->bukti_pembayaran);
+                }
+                $pathBuktiPembayaran = $request->file('bukti_pembayaran')->store('bukti_pembayaran', 'public');
+            }
+
+            $transaksi->update([
+                'uang_muka' => $newUangMuka,
+                'sisa' => $newSisa,
+                'id_pelunasan' => $idPelunasan ?? $transaksi->id_pelunasan,
+                'metode_pembayaran' => $validatedData['metode_pembayaran'],
+                'bukti_pembayaran' => $pathBuktiPembayaran,
+                'rekening_id' => $validatedData['rekening_id'] ?? null,
+                'keterangan_pembayaran' => $validatedData['keterangan_pembayaran'] ?? null,
+            ]);
+
+            DB::commit();
+            return redirect()->route('transaksi.index')->with('success', 'Pembayaran pelunasan berhasil diproses!');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            return redirect()->back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            dd($e->getMessage());
+        }
+    }
+
     public function destroy(int $id)
     {
         $transaksi = Transaksi::findOrFail($id);
+        if ($transaksi->bukti_pembayaran && Storage::disk('public')->exists($transaksi->bukti_pembayaran)) {
+            Storage::disk('public')->delete($transaksi->bukti_pembayaran);
+        }
         $transaksi->transaksiDetails()->delete();
         $transaksi->delete();
 
@@ -304,35 +378,34 @@ class TransaksiController extends Controller
     public function getProductDetails(Request $request)
     {
         $produkId = $request->input('produk_id');
-        $produkName = $request->input('nama_produk'); 
+        $produkName = $request->input('nama_produk');
 
         $produk = null;
         if ($produkId) {
-            $produk = Produk::with(['bahan', 'satuan'])->find($produkId);
+            $produk = Produk::find($produkId);
         } elseif ($produkName) {
-            $produk = Produk::with(['bahan', 'satuan'])->where('nama', $produkName)->first();
+            $produk = Produk::where('nama', $produkName)->first();
         }
 
         if ($produk) {
             return response()->json([
                 'nama_produk' => $produk->nama,
-                'bahan' => $produk->bahan->nama ?? '', 
+                'bahan' => $produk->bahan ?? '',
                 'ukuran' => $produk->ukuran,
-                'satuan' => $produk->satuan->nama ?? '', 
+                'satuan' => $produk->satuan ?? '',
                 'harga' => $produk->harga_jual,
             ]);
         }
 
         return response()->json(null, 404);
     }
-
+ 
     public function getProdukItemRow(Request $request)
     {
         $index = $request->input('index');
-     
-        $produks = Produk::with(['bahan', 'satuan'])->get();
+        $produks = Produk::all();
 
-        return view('pages.transaksi._produk_item_row', compact('index', 'produks'));
+        return view('pages.transaksi.produk_item_row', compact('index', 'produks'));
     }
 
     private function generateNoTransaksi(?string $lastNoTransaksi): string
@@ -360,9 +433,154 @@ class TransaksiController extends Controller
                                     ->latest()
                                     ->get();
 
-    
         $totalPiutang = $piutangTransaksi->sum('sisa');
 
         return view('pages.piutang.index', compact('piutangTransaksi', 'totalPiutang'));
+    }
+
+    public function pendapatanIndex(Request $request)
+    {
+        $query = Transaksi::with(['pelanggan', 'rekening'])
+                                        ->where('uang_muka', '>', 0)
+                                        ->latest();
+
+        // $startDate = $request->input('start_date'); 
+        // $endDate = $request->input('end_date');     
+        // $tanggalBayarStart = $request->input('tanggal_bayar_start'); 
+        // $tanggalBayarEnd = $request->input('tanggal_bayar_end');     
+        $metodePembayaran = $request->input('metode_pembayaran');
+        $rekeningId = $request->input('rekening_id');
+        $searchQuery = $request->input('search_query');
+
+        if ($startDate) {
+            $query->whereDate('tanggal_order', '>=', $startDate);
+        }
+
+        if ($endDate) {
+            $query->whereDate('tanggal_order', '<=', $endDate);
+        }
+
+        if ($tanggalBayarStart) {
+            $query->whereDate('updated_at', '>=', $tanggalBayarStart);
+        }
+
+        if ($tanggalBayarEnd) {
+            $query->whereDate('updated_at', '<=', $tanggalBayarEnd);
+        }
+
+        if ($metodePembayaran && $metodePembayaran !== 'all') {
+            $query->where('metode_pembayaran', $metodePembayaran);
+        }
+
+        if ($rekeningId) {
+            $query->where('rekening_id', $rekeningId);
+        }
+
+        if ($searchQuery) {
+            $query->where(function($q) use ($searchQuery) {
+                $q->whereHas('pelanggan', function ($subQ) use ($searchQuery) {
+                    $subQ->where('nama', 'like', '%' . $searchQuery . '%');
+                })->orWhere('no_transaksi', 'like', '%' . $searchQuery . '%');
+            });
+        }
+
+        $pendapatanTransaksi = $query->get();
+
+        $totalPendapatan = $pendapatanTransaksi->sum('uang_muka');
+
+        $rekening = Rekening::all();
+
+        return view('pages.pendapatan.index', compact(
+            'pendapatanTransaksi',
+            'totalPendapatan',
+            'startDate',
+            'endDate',
+            'tanggalBayarStart',
+            'tanggalBayarEnd',
+            'metodePembayaran',
+            'rekeningId',
+            'searchQuery',
+            'rekening' 
+        ));
+    }
+
+   
+    public function printPendapatanPdf(Request $request)
+    {
+        $query = Transaksi::with(['pelanggan', 'rekening'])
+                                        ->where('uang_muka', '>', 0)
+                                        ->latest();
+
+        // $startDate = $request->input('start_date');
+        // $endDate = $request->input('end_date');
+        // $tanggalBayarStart = $request->input('tanggal_bayar_start');
+        // $tanggalBayarEnd = $request->input('tanggal_bayar_end');
+        $metodePembayaran = $request->input('metode_pembayaran');
+        $rekeningId = $request->input('rekening_id');
+        $searchQuery = $request->input('search_query');
+
+        // if ($startDate) {
+        //     $query->whereDate('tanggal_order', '>=', $startDate);
+        // }
+
+        // if ($endDate) {
+        //     $query->whereDate('tanggal_order', '<=', $endDate);
+        // }
+
+        // if ($tanggalBayarStart) {
+        //     $query->whereDate('updated_at', '>=', $tanggalBayarStart);
+        // }
+
+        // if ($tanggalBayarEnd) {
+        //     $query->whereDate('updated_at', '<=', $tanggalBayarEnd);
+        // }
+
+        if ($metodePembayaran && $metodePembayaran !== 'all') {
+            $query->where('metode_pembayaran', $metodePembayaran);
+        }
+
+        if ($rekeningId) {
+            $query->where('rekening_id', $rekeningId);
+        }
+
+        if ($searchQuery) {
+            $query->where(function($q) use ($searchQuery) {
+                $q->whereHas('pelanggan', function ($subQ) use ($searchQuery) {
+                    $subQ->where('nama', 'like', '%' . $searchQuery . '%');
+                })->orWhere('no_transaksi', 'like', '%' . $searchQuery . '%');
+            });
+        }
+
+        $pendapatanTransaksi = $query->get();
+        $totalPendapatan = $pendapatanTransaksi->sum('uang_muka');
+        $perusahaan = Perusahaan::first(); // Ambil data perusahaan
+
+        // Konfigurasi Dompdf
+        $options = new Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', true); // Penting untuk gambar dari asset()
+
+        $dompdf = new Dompdf($options);
+
+        $html = view('pages.pendapatan.print_pendapatan', compact(
+            'pendapatanTransaksi',
+            'totalPendapatan',
+            'startDate',
+            'endDate',
+            'tanggalBayarStart',
+            'tanggalBayarEnd',
+            'metodePembayaran',
+            'rekeningId',
+            'searchQuery',
+            'perusahaan'
+        ))->render();
+
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait'); 
+        $dompdf->render();
+
+        $filename = 'laporan_pendapatan_' . now()->format('Ymd_His') . '.pdf';
+
+        return $dompdf->stream($filename);
     }
 }

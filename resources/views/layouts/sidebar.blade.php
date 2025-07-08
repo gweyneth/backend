@@ -109,7 +109,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="#" class="nav-link {{ Request::is('laporan/pendapatan') ? 'active' : '' }}">
+                            <a href="{{ route('pendapatan.index') }}" class="nav-link {{ Request::is('laporan/pendapatan') ? 'active' : '' }}">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Rincian Pendapatan</p>
                             </a>
@@ -140,6 +140,13 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
+                            <a href="{{ route('produk.index') }}"
+                                class="nav-link {{ Request::is('produk') ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Produk</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="{{ route('kategoribarang.index') }}"
                                 class="nav-link {{ Request::is('kategori') ? 'active' : '' }}">
                                 <i class="far fa-circle nav-icon"></i>
@@ -160,13 +167,6 @@
                                 <p>Satuan</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="{{ route('produk.index') }}"
-                                class="nav-link {{ Request::is('produk') ? 'active' : '' }}">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Produk</p>
-                            </a>
-                        </li>
                     </ul>
                 </li>
                 <li class="nav-item has-treeview {{ Request::is('pengaturan*') ? 'menu-open' : '' }}">
@@ -182,7 +182,7 @@
                             <a href="#"
                                 class="nav-link {{ Request::is('pengaturan/factory') ? 'active' : '' }}">
                                 <i class="far fa-circle nav-icon"></i>
-                                <p>Factory</p>
+                                <p>Akun Saya</p>
                             </a>
                         </li>
                         <li class="nav-item">

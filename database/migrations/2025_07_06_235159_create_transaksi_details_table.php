@@ -12,7 +12,6 @@ return new class extends Migration
             $table->id(); 
             $table->foreignId('transaksi_id')->constrained('transaksi')->onDelete('cascade');
             $table->foreignId('produk_id')->nullable()->constrained('produk')->onDelete('set null'); 
-
             $table->string('nama_produk'); 
             $table->string('keterangan')->nullable(); 
             $table->string('bahan')->nullable();

@@ -9,7 +9,7 @@ class Transaksi extends Model
 {
     use HasFactory;
 
-    protected $table = 'transaksi'; 
+    protected $table = 'transaksi'; // Menentukan nama tabel di database
 
     protected $fillable = [
         'no_transaksi',
@@ -22,6 +22,10 @@ class Transaksi extends Model
         'sisa',
         'id_pelunasan',
         'status_pengerjaan',
+        'metode_pembayaran',
+        'bukti_pembayaran',
+        'rekening_id',
+        'keterangan_pembayaran',
     ];
 
     protected $casts = [
@@ -33,15 +37,18 @@ class Transaksi extends Model
         'sisa' => 'decimal:2',
     ];
 
-    
     public function pelanggan()
     {
         return $this->belongsTo(Pelanggan::class);
     }
 
-    
     public function transaksiDetails()
     {
         return $this->hasMany(TransaksiDetail::class);
+    }
+
+    public function rekening()
+    {
+        return $this->belongsTo(Rekening::class);
     }
 }
