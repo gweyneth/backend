@@ -48,3 +48,6 @@ Route::resource('transaksi', TransaksiController::class);
 Route::get('piutang', [TransaksiController::class, 'piutangIndex'])->name('piutang.index');
 Route::get('pendapatan', [TransaksiController::class, 'pendapatanIndex'])->name('pendapatan.index');
 Route::get('pendapatan/print-pdf', [TransaksiController::class, 'printPendapatanPdf'])->name('pendapatan.print-pdf');
+Route::get('transaksi/{id}/print-receipt', [TransaksiController::class, 'printReceipt'])->name('transaksi.print-receipt');
+Route::get('transaksi/{id}/print-invoice', [TransaksiController::class, 'printInvoice'])->name('transaksi.print-invoice');
+

@@ -452,21 +452,21 @@ class TransaksiController extends Controller
         $rekeningId = $request->input('rekening_id');
         $searchQuery = $request->input('search_query');
 
-        if ($startDate) {
-            $query->whereDate('tanggal_order', '>=', $startDate);
-        }
+        // if ($startDate) {
+        //     $query->whereDate('tanggal_order', '>=', $startDate);
+        // }
 
-        if ($endDate) {
-            $query->whereDate('tanggal_order', '<=', $endDate);
-        }
+        // if ($endDate) {
+        //     $query->whereDate('tanggal_order', '<=', $endDate);
+        // }
 
-        if ($tanggalBayarStart) {
-            $query->whereDate('updated_at', '>=', $tanggalBayarStart);
-        }
+        // if ($tanggalBayarStart) {
+        //     $query->whereDate('updated_at', '>=', $tanggalBayarStart);
+        // }
 
-        if ($tanggalBayarEnd) {
-            $query->whereDate('updated_at', '<=', $tanggalBayarEnd);
-        }
+        // if ($tanggalBayarEnd) {
+        //     $query->whereDate('updated_at', '<=', $tanggalBayarEnd);
+        // }
 
         if ($metodePembayaran && $metodePembayaran !== 'all') {
             $query->where('metode_pembayaran', $metodePembayaran);
@@ -493,10 +493,10 @@ class TransaksiController extends Controller
         return view('pages.pendapatan.index', compact(
             'pendapatanTransaksi',
             'totalPendapatan',
-            'startDate',
-            'endDate',
-            'tanggalBayarStart',
-            'tanggalBayarEnd',
+            // 'startDate',
+            // 'endDate',
+            // 'tanggalBayarStart',
+            // 'tanggalBayarEnd',
             'metodePembayaran',
             'rekeningId',
             'searchQuery',
@@ -511,21 +511,21 @@ class TransaksiController extends Controller
                                         ->where('uang_muka', '>', 0)
                                         ->latest();
 
-        // $startDate = $request->input('start_date');
-        // $endDate = $request->input('end_date');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
         // $tanggalBayarStart = $request->input('tanggal_bayar_start');
         // $tanggalBayarEnd = $request->input('tanggal_bayar_end');
         $metodePembayaran = $request->input('metode_pembayaran');
         $rekeningId = $request->input('rekening_id');
         $searchQuery = $request->input('search_query');
 
-        // if ($startDate) {
-        //     $query->whereDate('tanggal_order', '>=', $startDate);
-        // }
+        if ($startDate) {
+            $query->whereDate('tanggal_order', '>=', $startDate);
+        }
 
-        // if ($endDate) {
-        //     $query->whereDate('tanggal_order', '<=', $endDate);
-        // }
+        if ($endDate) {
+            $query->whereDate('tanggal_order', '<=', $endDate);
+        }
 
         // if ($tanggalBayarStart) {
         //     $query->whereDate('updated_at', '>=', $tanggalBayarStart);
@@ -582,5 +582,22 @@ class TransaksiController extends Controller
         $filename = 'laporan_pendapatan_' . now()->format('Ymd_His') . '.pdf';
 
         return $dompdf->stream($filename);
+    }
+
+    public function printReceipt(int $id)
+    {
+        $transaksi = Transaksi::with(['pelanggan', 'transaksiDetails.produk'])->findOrFail($id);
+        $perusahaan = Perusahaan::first(); // Ambil data perusahaan
+
+        return view('pages.transaksi.receipt', compact('transaksi', 'perusahaan'));
+    }
+
+   
+    public function printInvoice(int $id)
+    {
+        $transaksi = Transaksi::with(['pelanggan', 'transaksiDetails.produk'])->findOrFail($id);
+        $perusahaan = Perusahaan::first(); // Ambil data perusahaan
+
+        return view('pages.transaksi.invoice', compact('transaksi', 'perusahaan'));
     }
 }

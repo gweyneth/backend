@@ -22,14 +22,14 @@
     <section class="content">
         <div class="row">
             {{-- Orderan Total --}}
-            <div class="col-12 col-sm-6 col-md-4"> {{-- Diubah dari col-md-3 menjadi col-md-4 --}}
-                <div class="info-box"> {{-- Latar belakang kembali putih --}}
-                    <span class="info-box-icon bg-info elevation-1" style="font-size: 3rem; width: 90px; height: 90px; line-height: 90px;">
+            <div class="col-12 col-sm-6 col-md-4">
+                <div class="info-box">
+                    <span class="info-box-icon bg-info elevation-1" style="font-size: 2.5rem; width: 80px; height: 80px; line-height: 80px;">
                         <i class="fas fa-shopping-cart"></i>
-                    </span> {{-- Ikon tetap berwarna dan ukuran disesuaikan --}}
+                    </span>
                     <div class="info-box-content">
-                        <span class="info-box-text" style="font-size: 1.1rem;">Orderan Total</span>
-                        <span class="info-box-number" style="font-size: 2rem;">
+                        <span class="info-box-text" style="font-size: 1rem;">Orderan Total</span>
+                        <span class="info-box-number" style="font-size: 1.8rem;">
                             {{ $totalOrderan }}
                         </span>
                     </div>
@@ -40,14 +40,14 @@
             <!-- /.col -->
 
             {{-- Orderan hari ini --}}
-            <div class="col-12 col-sm-6 col-md-4"> {{-- Diubah dari col-md-3 menjadi col-md-4 --}}
-                <div class="info-box mb-3"> {{-- Latar belakang kembali putih --}}
-                    <span class="info-box-icon bg-danger elevation-1" style="font-size: 3rem; width: 90px; height: 90px; line-height: 90px;">
+            <div class="col-12 col-sm-6 col-md-4">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-danger elevation-1" style="font-size: 2.5rem; width: 80px; height: 80px; line-height: 80px;">
                         <i class="fas fa-shopping-cart"></i>
-                    </span> {{-- Ikon tetap berwarna dan ukuran disesuaikan --}}
+                    </span>
                     <div class="info-box-content">
-                        <span class="info-box-text" style="font-size: 1.1rem;">Orderan hari ini</span>
-                        <span class="info-box-number" style="font-size: 2rem;">{{ $orderanHariIni }}</span>
+                        <span class="info-box-text" style="font-size: 1rem;">Orderan hari ini</span>
+                        <span class="info-box-number" style="font-size: 1.8rem;">{{ $orderanHariIni }}</span>
                     </div>
                     <!-- /.info-box-content -->
                 </div>
@@ -56,14 +56,14 @@
             <!-- /.col -->
 
             {{-- Orderan Bulan Ini --}}
-            <div class="col-12 col-sm-6 col-md-4"> {{-- Diubah dari col-md-3 menjadi col-md-4 --}}
-                <div class="info-box mb-3"> {{-- Latar belakang kembali putih --}}
-                    <span class="info-box-icon bg-success elevation-1" style="font-size: 3rem; width: 90px; height: 90px; line-height: 90px;">
+            <div class="col-12 col-sm-6 col-md-4">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-success elevation-1" style="font-size: 2.5rem; width: 80px; height: 80px; line-height: 80px;">
                         <i class="fas fa-shopping-cart"></i>
-                    </span> {{-- Ikon tetap berwarna dan ukuran disesuaikan --}}
+                    </span>
                     <div class="info-box-content">
-                        <span class="info-box-text" style="font-size: 1.1rem;">Orderan Bulan Ini</span>
-                        <span class="info-box-number" style="font-size: 2rem;">{{ $orderanBulanIni }}</span>
+                        <span class="info-box-text" style="font-size: 1rem;">Orderan Bulan Ini</span>
+                        <span class="info-box-number" style="font-size: 1.8rem;">{{ $orderanBulanIni }}</span>
                     </div>
                     <!-- /.info-box-content -->
                 </div>
@@ -75,14 +75,14 @@
 
         <div class="row">
             {{-- Total Konsumen --}}
-            <div class="col-12 col-sm-6 col-md-4"> {{-- Diubah dari col-md-3 menjadi col-md-4 --}}
-                <div class="info-box"> {{-- Latar belakang kembali putih --}}
-                    <span class="info-box-icon bg-info elevation-1" style="font-size: 3rem; width: 90px; height: 90px; line-height: 90px;">
+            <div class="col-12 col-sm-6 col-md-4">
+                <div class="info-box">
+                    <span class="info-box-icon bg-info elevation-1" style="font-size: 2.5rem; width: 80px; height: 80px; line-height: 80px;">
                         <i class="fas fa-users"></i>
-                    </span> {{-- Ikon tetap berwarna dan ukuran disesuaikan --}}
+                    </span>
                     <div class="info-box-content">
-                        <span class="info-box-text" style="font-size: 1.1rem;">Total Konsumen</span>
-                        <span class="info-box-number" style="font-size: 2rem;">
+                        <span class="info-box-text" style="font-size: 1rem;">Total Konsumen</span>
+                        <span class="info-box-number" style="font-size: 1.8rem;">
                             {{ $totalKonsumen }}
                         </span>
                     </div>
@@ -93,14 +93,14 @@
             <!-- /.col -->
 
             {{-- Total omset hari ini --}}
-            <div class="col-12 col-sm-6 col-md-4"> {{-- Diubah dari col-md-3 menjadi col-md-4 --}}
-                <div class="info-box mb-3"> {{-- Latar belakang kembali putih --}}
-                    <span class="info-box-icon bg-secondary elevation-1" style="font-size: 3rem; width: 90px; height: 90px; line-height: 90px;">
+            <div class="col-12 col-sm-6 col-md-4">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-secondary elevation-1" style="font-size: 2.5rem; width: 80px; height: 80px; line-height: 80px;">
                         <i class="fas fa-money-bill-wave"></i>
-                    </span> {{-- Ikon tetap berwarna dan ukuran disesuaikan --}}
+                    </span>
                     <div class="info-box-content">
-                        <span class="info-box-text" style="font-size: 1.1rem;">Total omset hari ini</span>
-                        <span class="info-box-number" style="font-size: 2rem;">Rp{{ number_format($totalOmsetHariIni, 0, ',', '.') }}</span>
+                        <span class="info-box-text" style="font-size: 1rem;">Total omset hari ini</span>
+                        <span class="info-box-number" style="font-size: 1.8rem;">Rp{{ number_format($totalOmsetHariIni, 0, ',', '.') }}</span>
                     </div>
                     <!-- /.info-box-content -->
                 </div>
@@ -109,18 +109,137 @@
             <!-- /.col -->
 
             {{-- Total pengeluaran hari ini --}}
-            <div class="col-12 col-sm-6 col-md-4"> 
+            <div class="col-12 col-sm-6 col-md-4">
                 <div class="info-box mb-3">
-                    <span class="info-box-icon bg-warning elevation-1" style="font-size: 3rem; width: 90px; height: 90px; line-height: 90px;">
+                    <span class="info-box-icon bg-warning elevation-1" style="font-size: 2.5rem; width: 80px; height: 80px; line-height: 80px;">
                         <i class="fas fa-money-bill-wave"></i>
-                    </span> {{-- Ikon tetap berwarna dan ukuran disesuaikan --}}
+                    </span>
                     <div class="info-box-content">
-                        <span class="info-box-text" style="font-size: 1.1rem;">Total pengeluaran hari ini</span>
-                        <span class="info-box-number" style="font-size: 2rem;">Rp{{ number_format($totalPengeluaranHariIni, 0, ',', '.') }}</span>
+                        <span class="info-box-text" style="font-size: 1rem;">Total pengeluaran hari ini</span>
+                        <span class="info-box-number" style="font-size: 1.8rem;">Rp{{ number_format($totalPengeluaranHariIni, 0, ',', '.') }}</span>
                     </div>
                     <!-- /.info-box-content -->
                 </div>
                 <!-- /.info-box -->
+            </div>
+            <!-- /.col -->
+        </div>
+        <!-- /.row -->
+
+        <div class="row mt-4">
+            {{-- Card Transaksi Terbaru --}}
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header border-transparent">
+                        <h3 class="card-title">Transaksi</h3>
+                        <div class="card-tools">
+                            <a href="{{ route('transaksi.index') }}" class="btn btn-sm btn-primary">Semua ></a>
+                        </div>
+                    </div>
+                    <!-- /.card-header -->
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table m-0">
+                                <thead>
+                                    <tr>
+                                        <th>Invoice</th>
+                                        <th>Konsumen</th>
+                                        <th>Status</th>
+                                        {{-- Kolom Kasir dihapus --}}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($recentTransactions as $transaction)
+                                    <tr>
+                                        <td>
+                                            <a href="{{ route('transaksi.show', $transaction->id) }}">
+                                                {{ $transaction->no_transaksi }}
+                                            </a>
+                                        </td>
+                                        <td>{{ $transaction->pelanggan->nama ?? 'Umum' }}</td>
+                                        <td>
+                                            @php
+                                                $statusClass = '';
+                                                if ($transaction->sisa == 0) {
+                                                    $statusClass = 'badge badge-success'; // Lunas
+                                                } else if ($transaction->uang_muka > 0 && $transaction->sisa > 0) {
+                                                    $statusClass = 'badge badge-warning'; // Bayar Sebagian
+                                                } else {
+                                                    $statusClass = 'badge badge-danger'; // Belum Lunas
+                                                }
+                                            @endphp
+                                            <span class="{{ $statusClass }}">
+                                                @if ($transaction->sisa == 0)
+                                                    Lunas
+                                                @elseif ($transaction->uang_muka > 0 && $transaction->sisa > 0)
+                                                    Bayar Sebagian
+                                                @else
+                                                    Belum Lunas
+                                                @endif
+                                            </span>
+                                        </td>
+                                        {{-- Data Kasir dihapus --}}
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="3" class="text-center">Tidak ada transaksi terbaru.</td> {{-- colspan disesuaikan --}}
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- /.table-responsive -->
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+            </div>
+            <!-- /.col -->
+
+            {{-- Card Piutang Terbesar --}}
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header border-transparent">
+                        <h3 class="card-title">Piutang Terbesar</h3>
+                        <div class="card-tools">
+                            <a href="{{ route('piutang.index') }}" class="btn btn-sm btn-primary">Semua ></a>
+                        </div>
+                    </div>
+                    <!-- /.card-header -->
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table m-0">
+                                <thead>
+                                    <tr>
+                                        <th>No.</th>
+                                        <th>Invoice</th>
+                                        <th>Pelanggan</th>
+                                        <th>Sisa Piutang</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($largestReceivables as $index => $receivable)
+                                    <tr>
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>
+                                            <a href="{{ route('transaksi.show', $receivable->id) }}">
+                                                {{ $receivable->no_transaksi }}
+                                            </a>
+                                        </td>
+                                        <td>{{ $receivable->pelanggan->nama ?? 'Umum' }}</td>
+                                        <td>Rp{{ number_format($receivable->sisa, 0, ',', '.') }}</td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center">Tidak ada data piutang terbesar.</td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- /.table-responsive -->
+                    </div>
+                    <!-- /.card-body -->
+                </div>
             </div>
             <!-- /.col -->
         </div>

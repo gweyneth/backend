@@ -24,10 +24,21 @@ class DashboardController extends Controller
 
         $totalKonsumen = Pelanggan::count();
 
-        $totalOmsetHariIni = Transaksi::whereDate('updated_at', $today) // Menggunakan updated_at sebagai tanggal pembayaran terakhir
-                                    ->sum('uang_muka');
+        $totalOmsetHariIni = Transaksi::whereDate('updated_at', $today)
+            ->sum('uang_muka');
 
         $totalPengeluaranHariIni = Pengeluaran::whereDate('created_at', $today)->sum('total');
+
+
+        $recentTransactions = Transaksi::with(['pelanggan'])
+            ->latest()
+            ->take(7) 
+            ->get();
+        $largestReceivables = Transaksi::where('sisa', '>', 0)
+            ->with('pelanggan')
+            ->orderByDesc('sisa')
+            ->take(5)
+            ->get();
 
         return view('dashboard', compact(
             'totalOrderan',
@@ -35,7 +46,9 @@ class DashboardController extends Controller
             'orderanBulanIni',
             'totalKonsumen',
             'totalOmsetHariIni',
-            'totalPengeluaranHariIni'
+            'totalPengeluaranHariIni',
+            'recentTransactions', 
+            'largestReceivables' 
         ));
     }
 }

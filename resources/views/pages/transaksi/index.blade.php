@@ -128,15 +128,16 @@
                                             Aksi
                                         </button>
                                         <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="#" onclick="printStruk('{{ $item->id }}')">
+                                            <div class="dropdown-divider"></div>
+                                            <a class="dropdown-item" href="{{ route('transaksi.print-receipt', $item->id) }}" target="_blank">
                                                 <i class="fas fa-print"></i> PRINT STRUK
                                             </a>
-                                            <a class="dropdown-item" href="#" onclick="printInvoice('{{ $item->id }}')">
+                                            <a class="dropdown-item" href="{{ route('transaksi.print-invoice', $item->id) }}" target="_blank">
                                                 <i class="fas fa-file-invoice"></i> PRINT INVOICE
                                             </a>
                                             <div class="dropdown-divider"></div>
                                             <button class="dropdown-item text-danger" type="button" onclick="confirmDelete('{{ $item->id }}')">
-                                                <i class="fas fa-trash-alt"></i> AJUKAN HAPUS TRANSAKSI
+                                                <i class="fas fa-trash-alt"></i>HAPUS TRANSAKSI
                                             </button>
                                         </div>
                                     </div>
@@ -247,11 +248,6 @@
                     <div class="form-group">
                         <label for="keterangan_pembayaran">Keterangan (Opsional)</label>
                         <textarea name="keterangan_pembayaran" id="keterangan_pembayaran" class="form-control" rows="3"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="modal_id_pelunasan">ID Pelunasan (Opsional)</label>
-                        <input type="text" name="id_pelunasan" id="modal_id_pelunasan" class="form-control">
                     </div>
                 </div>
                 <div class="modal-footer">

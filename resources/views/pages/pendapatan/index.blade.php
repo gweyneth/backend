@@ -103,7 +103,6 @@
                                 <th>Bank (Jika Transfer)</th>
                                 <th>Lampiran (Bukti Bayar)</th>
                                 <th>Jumlah Uang Muka</th>
-                                <th style="width: 100px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -124,9 +123,6 @@
                                     @endif
                                 </td>
                                 <td>Rp{{ number_format($item->uang_muka, 2, ',', '.') }}</td> {{-- Menampilkan uang muka sebagai jumlah yang dibayar --}}
-                                <td>
-                                    <a href="{{ route('transaksi.show', $item->id) }}" class="btn btn-info btn-sm">Detail</a>
-                                </td>
                             </tr>
                             @empty
                             <tr>
@@ -138,7 +134,6 @@
                             <tr>
                                 <th colspan="8" class="text-right">Total Keseluruhan Uang Muka (Pendapatan):</th>
                                 <th>Rp{{ number_format($totalPendapatan, 2, ',', '.') }}</th>
-                                <th></th> {{-- Kolom aksi --}}
                             </tr>
                         </tfoot>
                     </table>

@@ -130,15 +130,6 @@
                                 <label for="sisa">Sisa Pembayaran</label>
                                 <input type="text" name="sisa" id="sisa" class="form-control" value="{{ old('sisa', 0) }}" readonly>
                             </div>
-
-                            <div class="form-group">
-                                <label for="id_pelunasan">ID Pelunasan</label>
-                                <input type="text" name="id_pelunasan" id="id_pelunasan" class="form-control @error('id_pelunasan') is-invalid @enderror" value="{{ old('id_pelunasan') }}">
-                                @error('id_pelunasan')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
                             <div class="form-group">
                                 <label for="status_pengerjaan">Status Pengerjaan</label>
                                 <select name="status_pengerjaan" id="status_pengerjaan" class="form-control @error('status_pengerjaan') is-invalid @enderror" required>
