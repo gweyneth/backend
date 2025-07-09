@@ -247,9 +247,47 @@
     </section>
 @endsection
 
-@push('scripts')
-    {{-- Tambahkan script khusus untuk halaman dashboard di sini jika diperlukan --}}
-@endpush
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end', // Posisi di kanan atas
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });
+
+        // Tampilkan pesan sukses dari sesi (misal: setelah berhasil login)
+        @if (session('success'))
+            Toast.fire({
+                icon: 'success',
+                title: '{{ session('success') }}'
+            });
+        @endif
+
+        // Tampilkan pesan error dari sesi (misal: username/password salah)
+        @if (session('error'))
+            Toast.fire({
+                icon: 'error',
+                title: '{{ session('error') }}'
+            });
+        @endif
+
+        @if ($errors->any())
+            @foreach ($errors->all() as $error)
+                Toast.fire({
+                    icon: 'error',
+                    title: '{{ $error }}'
+                });
+            @endforeach
+        @endif
+    });
+</script>
 
 @push('styles')
     {{-- Tambahkan style khusus untuk halaman dashboard di sini jika diperlukan --}}

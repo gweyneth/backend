@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* ... (CSS Anda yang sudah ada, tidak ada perubahan di sini) ... */
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
 
         body {
@@ -177,82 +176,53 @@
                     <input type="password" id="password" name="password" required>
                 </div>
             </div>
-            <button type="button" class="submit-button" onclick="confirmLogin(event);">Login</button>
+            {{-- Tombol login sekarang langsung submit form --}}
+            <button type="submit" class="submit-button">Login</button>
         </form>
     </div>
 
     <script>
-        // Inisialisasi SweetAlert2 Toast
-        const Toast = Swal.mixin({
-            toast: true,
-            position: 'top-end', // Posisi di kanan atas
-            showConfirmButton: false,
-            timer: 3000,
-            timerProgressBar: true,
-            didOpen: (toast) => {
-                toast.addEventListener('mouseenter', Swal.stopTimer);
-                toast.addEventListener('mouseleave', Swal.resumeTimer);
-            }
-        });
-
-        // Tampilkan pesan sukses dari sesi (misal: setelah berhasil registrasi atau login)
-        @if (session('status'))
-            Toast.fire({
-                icon: 'success',
-                title: '{{ session('status') }}'
-            });
-        @endif
-
-        // Tampilkan pesan error dari sesi (misal: username/password salah)
-        @if (session('error'))
-            Toast.fire({
-                icon: 'error',
-                title: '{{ session('error') }}'
-            });
-        @endif
-
-        // Menampilkan pesan validasi error dari Laravel (`$errors->any()`)
-        // Setiap error akan ditampilkan sebagai toast terpisah
-        @if ($errors->any())
-            @foreach ($errors->all() as $error)
-                Toast.fire({
-                    icon: 'error',
-                    title: '{{ $error }}'
-                });
-            @endforeach
-        @endif
-
-
-        function confirmLogin(event) {
-            event.preventDefault(); // Mencegah form submit langsung
-
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
-            // Validasi sederhana sebelum menampilkan SweetAlert
-            if (!username || !password) {
-                Toast.fire({ // Menggunakan Toast untuk notifikasi ini juga
-                    icon: 'warning', // Ganti icon ke warning
-                    title: 'Silakan isi username dan password Anda.'
-                });
-                return;
-            }
-
-            Swal.fire({
-                title: 'Konfirmasi Login',
-                text: "Apakah data yang Anda masukkan sudah benar?",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Ya, Login',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    document.getElementById('login-form').submit(); // Submit form jika dikonfirmasi
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inisialisasi SweetAlert2 Toast
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end', // Posisi di kanan atas
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                    toast.addEventListener('mouseleave', Swal.resumeTimer);
                 }
             });
-        }
+
+            // Tampilkan pesan sukses dari sesi (misal: setelah berhasil login)
+            @if (session('success'))
+                Toast.fire({
+                    icon: 'success',
+                    title: '{{ session('success') }}'
+                });
+            @endif
+
+            // Tampilkan pesan error dari sesi (misal: username/password salah)
+            @if (session('error'))
+                Toast.fire({
+                    icon: 'error',
+                    title: '{{ session('error') }}'
+                });
+            @endif
+
+            // Menampilkan pesan validasi error dari Laravel (`$errors->any()`)
+            // Setiap error akan ditampilkan sebagai toast terpisah
+            @if ($errors->any())
+                @foreach ($errors->all() as $error)
+                    Toast.fire({
+                        icon: 'error',
+                        title: '{{ $error }}'
+                    });
+                @endforeach
+            @endif
+        });
     </script>
 </body>
 </html>

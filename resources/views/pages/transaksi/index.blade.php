@@ -21,7 +21,7 @@
             <div class="card-header">
                 <h5 class="card-title">Daftar Transaksi</h5>
                 <span class="float-right">
-                    <a href="{{ route('transaksi.create') }}" class="btn btn-primary">Tambah Transaksi</a>
+                    <a href="{{ route('transaksi.create') }}" class="btn btn-primary btn-sm">Tambah Transaksi</a>
                 </span>
             </div>
             <div class="card-body">
