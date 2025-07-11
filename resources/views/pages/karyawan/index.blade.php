@@ -21,7 +21,7 @@
             <div class="card-header">
                 <h5 class="card-title">Daftar Karyawan</h5>
                 <span class="float-right">
-                    <a href="{{ route('karyawan.create') }}" class="btn btn-primary">Tambah Karyawan</a>
+                    <a href="{{ route('karyawan.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Tambah Karyawan</a>
                 </span>
             </div>
             <div class="card-body">
@@ -44,6 +44,23 @@
                     </div>
                 @endif
 
+                {{-- Form untuk memilih jumlah data per halaman --}}
+                {{-- PENTING: Membungkus dropdown limit dalam form terpisah --}}
+                <form action="{{ route('karyawan.index') }}" method="GET" id="limitForm">
+                    <div class="form-group row align-items-center mb-3">
+                        <label for="limit" class="col-auto col-form-label mr-2">Tampilkan:</label>
+                        <div class="col-auto">
+                            <select name="limit" id="limit" class="form-control form-control-sm" onchange="this.form.submit()">
+                                @foreach ([5, 10, 25, 50, 100] as $option)
+                                    <option value="{{ $option }}" {{ $limit == $option ? 'selected' : '' }}>{{ $option }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-auto col-form-label">data per halaman</div>
+                    </div>
+                </form>
+
+
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped">
                         <thead>
@@ -62,7 +79,7 @@
                         <tbody>
                             @forelse ($karyawan as $item)
                             <tr>
-                                <td>{{ $loop->iteration }}</td>
+                                <td>{{ $loop->iteration + ($karyawan->currentPage() - 1) * $karyawan->perPage() }}</td>
                                 <td>{{ $item->nik ?? '-' }}</td>
                                 <td>{{ $item->nama_karyawan }}</td>
                                 <td>{{ $item->jabatan }}</td>
@@ -99,6 +116,12 @@
                         </tbody>
                     </table>
                 </div>
+
+                {{-- Tautan Paginasi --}}
+                <div class="d-flex justify-content-center mt-3">
+                    {{-- Pastikan appends(request()->query()) digunakan agar parameter limit tetap ada saat navigasi paginasi --}}
+                    {{ $karyawan->appends(request()->query())->links('pagination::bootstrap-4') }}
+                </div>
             </div>
         </div>
     </div>
@@ -126,7 +149,6 @@
                             <li class="list-group-item">
                                 <b>ID</b> <a class="float-right" id="detail-id"></a>
                             </li>
-                            {{-- Baris ID Karyawan dihapus karena tidak digunakan lagi --}}
                             <li class="list-group-item">
                                 <b>NIK</b> <a class="float-right" id="detail-nik"></a>
                             </li>
@@ -181,7 +203,6 @@
             .then(data => {
                 // Isi data ke dalam elemen-elemen modal
                 document.getElementById('detail-id').innerText = data.id;
-                // document.getElementById('detail-id_karyawan').innerText = data.id_karyawan ?? '-'; // Baris ini dihapus
                 document.getElementById('detail-nik').innerText = data.nik ?? '-';
                 document.getElementById('detail-nama_karyawan-modal').innerText = data.nama_karyawan;
                 document.getElementById('detail-jabatan-modal').innerText = data.jabatan;

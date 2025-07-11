@@ -60,9 +60,12 @@
         .table-products th {
             border-bottom: 1px dashed #999;
         }
-        .table-products td:nth-child(2),
-        .table-products td:nth-child(3) {
+        /* Mengatur perataan teks dan menambahkan padding kanan untuk kolom Qty, Harga, dan Total */
+        .table-products td:nth-child(2), /* Qty */
+        .table-products td:nth-child(3), /* Harga */
+        .table-products td:nth-child(4) { /* Total */
             text-align: right;
+            padding-right: 5px; /* Menambahkan jarak di sebelah kanan */
         }
         .table-products tfoot td {
             border-top: 1px dashed #999;
@@ -159,10 +162,7 @@
                     <td colspan="3">Total Bayar</td>
                     <td>Rp{{ number_format($transaksi->total, 0, ',', '.') }}</td>
                 </tr>
-                <tr>
-                    <td colspan="3">Uang Muka</td>
-                    <td>Rp{{ number_format($transaksi->uang_muka, 0, ',', '.') }}</td>
-                </tr>
+                {{-- Baris Uang Muka dihapus --}}
                 <tr>
                     <td colspan="3">Sisa Pembayaran</td>
                     <td>Rp{{ number_format($transaksi->sisa, 0, ',', '.') }}</td>

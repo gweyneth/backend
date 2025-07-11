@@ -14,11 +14,17 @@ class KaryawanController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function index()
-    {
-        $karyawan = Karyawan::all();
-        return view('pages.karyawan.index', compact('karyawan'));
-    }
+    
+
+     public function index(Request $request)
+     {
+         // Ambil limit dari request, default 10 jika tidak ada
+         $limit = $request->input('limit', 10);
+ 
+         $karyawan = Karyawan::latest()->paginate($limit); // Gunakan paginate()
+ 
+         return view('pages.karyawan.index', compact('karyawan', 'limit'));
+     }
 
     /**
      * Menampilkan form untuk membuat karyawan baru.
