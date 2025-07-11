@@ -117,7 +117,7 @@
             <p>No. Transaksi: {{ $transaksi->no_transaksi }}</p>
             <p>Tanggal: {{ $transaksi->tanggal_order->format('d/m/Y H:i') }}</p>
             <p>Pelanggan: {{ $transaksi->pelanggan->nama ?? 'Umum' }}</p>
-            <p>Kasir: {{ Auth::user()->name ?? 'N/A' }}</p> {{-- Menampilkan nama kasir yang sedang login --}}
+            <p>Kasir: {{ Auth::user()->username ?? 'N/A' }}</p> {{-- Menampilkan nama kasir yang sedang login --}}
         </div>
 
         <div class="divider"></div>

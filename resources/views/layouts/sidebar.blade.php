@@ -135,6 +135,12 @@
                                 <p>Piutang Penjualan</p>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="{{ route('omset.index') }}" class="nav-link {{ Request::is('omset-penjualan*') ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Omset Penjualan</p>
+                            </a>
+                        </li>
                     </ul>
                 </li>
                 <li class="nav-item has-treeview {{ Request::is('rekening*') ? 'menu-open' : '' }}">

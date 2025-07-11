@@ -12,8 +12,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Storage;
-use Dompdf\Dompdf;
-use Dompdf\Options;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\TransaksiExport;
+
 use Laravel\Pail\Options as PailOptions;
 
 class TransaksiController extends Controller
@@ -287,7 +288,8 @@ class TransaksiController extends Controller
             dd($e->getMessage());
         }
     }
-
+    
+  
    
     public function pelunasan(Request $request, int $id)
     {
@@ -499,87 +501,7 @@ class TransaksiController extends Controller
             'rekening' 
         ));
     }
-
-   
-    public function printPendapatanPdf(Request $request)
-    {
-        $query = Transaksi::with(['pelanggan', 'rekening'])
-                                        ->where('uang_muka', '>', 0)
-                                        ->latest();
-
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
-        // $tanggalBayarStart = $request->input('tanggal_bayar_start');
-        // $tanggalBayarEnd = $request->input('tanggal_bayar_end');
-        $metodePembayaran = $request->input('metode_pembayaran');
-        $rekeningId = $request->input('rekening_id');
-        $searchQuery = $request->input('search_query');
-
-        if ($startDate) {
-            $query->whereDate('tanggal_order', '>=', $startDate);
-        }
-
-        if ($endDate) {
-            $query->whereDate('tanggal_order', '<=', $endDate);
-        }
-
-        // if ($tanggalBayarStart) {
-        //     $query->whereDate('updated_at', '>=', $tanggalBayarStart);
-        // }
-
-        // if ($tanggalBayarEnd) {
-        //     $query->whereDate('updated_at', '<=', $tanggalBayarEnd);
-        // }
-
-        if ($metodePembayaran && $metodePembayaran !== 'all') {
-            $query->where('metode_pembayaran', $metodePembayaran);
-        }
-
-        if ($rekeningId) {
-            $query->where('rekening_id', $rekeningId);
-        }
-
-        if ($searchQuery) {
-            $query->where(function($q) use ($searchQuery) {
-                $q->whereHas('pelanggan', function ($subQ) use ($searchQuery) {
-                    $subQ->where('nama', 'like', '%' . $searchQuery . '%');
-                })->orWhere('no_transaksi', 'like', '%' . $searchQuery . '%');
-            });
-        }
-
-        $pendapatanTransaksi = $query->get();
-        $totalPendapatan = $pendapatanTransaksi->sum('uang_muka');
-        $perusahaan = Perusahaan::first(); // Ambil data perusahaan
-
-        // Konfigurasi Dompdf
-        $options = new Options();
-        $options->set('isHtml5ParserEnabled', true);
-        $options->set('isRemoteEnabled', true); // Penting untuk gambar dari asset()
-
-        $dompdf = new Dompdf($options);
-
-        $html = view('pages.pendapatan.print_pendapatan', compact(
-            'pendapatanTransaksi',
-            'totalPendapatan',
-            'startDate',
-            'endDate',
-            'tanggalBayarStart',
-            'tanggalBayarEnd',
-            'metodePembayaran',
-            'rekeningId',
-            'searchQuery',
-            'perusahaan'
-        ))->render();
-
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait'); 
-        $dompdf->render();
-
-        $filename = 'laporan_pendapatan_' . now()->format('Ymd_His') . '.pdf';
-
-        return $dompdf->stream($filename);
-    }
-
+    
     public function printReceipt(int $id)
     {
         $transaksi = Transaksi::with(['pelanggan', 'transaksiDetails.produk'])->findOrFail($id);
@@ -595,5 +517,12 @@ class TransaksiController extends Controller
         $perusahaan = Perusahaan::first(); // Ambil data perusahaan
 
         return view('pages.transaksi.invoice', compact('transaksi', 'perusahaan'));
+    }
+
+    public function exportExcel()
+    {
+        // Nama file Excel yang akan di-download
+        $fileName = 'transaksi_' . date('Ymd_His') . '.xlsx';
+        return Excel::download(new TransaksiExport, $fileName);
     }
 }

@@ -47,15 +47,12 @@
                     <input type="hidden" name="no_transaksi" value="{{ $nextNoTransaksi }}">
 
                     <div class="row">
-                        {{-- Kolom Kiri: Detail Transaksi Utama --}}
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label for="pelanggan_id">Nama Pemesan</label>
                                 <select name="pelanggan_id" id="pelanggan_id" class="form-control @error('pelanggan_id') is-invalid @enderror">
                                     <option value="">Pilih Pelanggan</option>
                                     @foreach ($pelanggan as $item)
-                                        {{-- Menggunakan $item->nama sesuai klarifikasi database --}}
-                                        {{-- Menggunakan $item->no_hp sesuai klarifikasi terbaru --}}
                                         <option value="{{ $item->id }}" data-alamat="{{ $item->alamat }}" data-telp="{{ $item->no_hp }}" {{ old('pelanggan_id') == $item->id ? 'selected' : '' }}>
                                             {{ $item->nama }}
                                         </option>
@@ -92,13 +89,9 @@
                             </div>
                         </div>
 
-                        {{-- Kolom Kanan: Detail Produk Transaksi --}}
-                        <div class="col-md-6">
+                        <div class="col-md-8">
                             <h6>Detail Produk</h6>
                             <div id="produk-items-container">
-                                {{-- Baris produk akan ditambahkan di sini oleh JavaScript --}}
-                                {{-- Baris pertama di-include langsung saat halaman dimuat --}}
-                                {{-- Menggunakan nama partial yang diklarifikasi: produk_item_row (tanpa underscore) --}}
                                 @include('pages.transaksi.produk_item_row', ['index' => 0, 'produks' => $produks])
                             </div>
                             <button type="button" class="btn btn-success btn-sm mt-2" id="add-produk-item">Tambah Baris Produk</button>

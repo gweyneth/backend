@@ -21,28 +21,12 @@
             <div class="card-header">
                 <h5 class="card-title">Daftar Transaksi</h5>
                 <span class="float-right">
-                    <a href="{{ route('transaksi.create') }}" class="btn btn-primary btn-sm">Tambah Transaksi</a>
+                    <a href="{{ route('transaksi.create') }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i>Transaksi Baru</a>
+                    <a href="{{ route('transaksi.export-excel') }}" class="btn btn-success btn-sm"><i class="fas fa-file-excel"></i> Cetak Excel</a>
                 </span>
             </div>
             <div class="card-body">
-                @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('success') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                @endif
-
-                @if(session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        {{ session('error') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                @endif
-
+                @include('components.alert')
                 {{-- Form Filter Tanggal dan Pencarian --}}
                 <form action="{{ route('transaksi.index') }}" method="GET" class="mb-4">
                     <div class="form-row align-items-end">
@@ -54,11 +38,11 @@
                             <label for="end_date">Sampai Tanggal:</label>
                             <input type="date" name="end_date" id="end_date" class="form-control" value="{{ old('end_date', $endDate ?? '') }}">
                         </div>
-                        <div class="col-md-4 mb-2">
+                        <div class="col-md-3 mb-2">
                             <label for="search_query">Cari Pelanggan / No. Order:</label>
                             <input type="text" name="search_query" id="search_query" class="form-control" placeholder="Nama Pelanggan atau No. Order" value="{{ old('search_query', $searchQuery ?? '') }}">
                         </div>
-                        <div class="col-md-auto mb-2">
+                        <div class="col-md-3 mb-2">
                             <button type="submit" class="btn btn-info"><i class="fas fa-search"></i> Cari</button>
                             <a href="{{ route('transaksi.index') }}" class="btn btn-secondary"><i class="fas fa-sync-alt"></i> Reset</a>
                         </div>
@@ -217,6 +201,10 @@
                             <div class="form-check form-check-inline">
                                 <input class="form-check-input" type="radio" name="metode_pembayaran" id="metode_transfer" value="transfer_bank">
                                 <label class="form-check-label" for="metode_transfer">Transfer Bank</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="metode_pembayaran" id="metode_transfer" value="transfer_bank">
+                                <label class="form-check-label" for="metode_transfer">Qris</label>
                             </div>
                         </div>
                     </div>

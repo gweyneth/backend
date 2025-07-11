@@ -17,7 +17,6 @@ class Transaksi extends Model
         'tanggal_order',
         'tanggal_selesai',
         'total',
-        'uang_muka',
         'diskon',
         'sisa',
         'id_pelunasan',
@@ -32,7 +31,6 @@ class Transaksi extends Model
         'tanggal_order' => 'date',
         'tanggal_selesai' => 'date',
         'total' => 'decimal:2',
-        'uang_muka' => 'decimal:2',
         'diskon' => 'decimal:2',
         'sisa' => 'decimal:2',
     ];
