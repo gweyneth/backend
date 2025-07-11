@@ -21,87 +21,83 @@
             <div class="card-header">
                 <h5 class="card-title">Daftar Karyawan</h5>
                 <span class="float-right">
-                    <a href="{{ route('karyawan.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Tambah Karyawan</a>
+                    <a href="{{ route('karyawan.create') }}" class="btn btn-primary">Tambah Karyawan</a>
                 </span>
             </div>
             <div class="card-body">
-                {{-- Bagian untuk menampilkan pesan flash (success/error) --}}
-                @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('success') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                @endif
-
-                @if(session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        {{ session('error') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                @endif
-
-                {{-- Form untuk memilih jumlah data per halaman --}}
-                {{-- PENTING: Membungkus dropdown limit dalam form terpisah --}}
-                <form action="{{ route('karyawan.index') }}" method="GET" id="limitForm">
-                    <div class="form-group row align-items-center mb-3">
-                        <label for="limit" class="col-auto col-form-label mr-2">Tampilkan:</label>
-                        <div class="col-auto">
-                            <select name="limit" id="limit" class="form-control form-control-sm" onchange="this.form.submit()">
-                                @foreach ([5, 10, 25, 50, 100] as $option)
-                                    <option value="{{ $option }}" {{ $limit == $option ? 'selected' : '' }}>{{ $option }}</option>
-                                @endforeach
-                            </select>
+                @include('components.alert')
+                <form action="{{ route('karyawan.index') }}" method="GET" id="karyawanFilterForm">
+                    <div class="form-row align-items-end mb-4">
+                        <div class="col-auto mb-2">
+                            <div class="form-group mb-0">
+                                <label for="limit" class="col-form-label mr-2">Limit:</label>
+                                <select name="limit" id="limit" class="form-control" onchange="this.form.submit()">
+                                    @foreach ([5, 10, 25, 50, 100] as $option)
+                                        <option value="{{ $option }}" {{ request('limit', 10) == $option ? 'selected' : '' }}>{{ $option }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
-                        <div class="col-auto col-form-label">data per halaman</div>
+                        <div class="col-md-2 mb-2">
+                            <label for="start_date">Dari Tanggal:</label>
+                            <input type="date" name="start_date" id="start_date" class="form-control" value="{{ old('start_date', request('start_date')) }}">
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <label for="end_date">Sampai Tanggal:</label>
+                            <input type="date" name="end_date" id="end_date" class="form-control" value="{{ old('end_date', request('end_date')) }}">
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <label for="search_query">Cari karyawan / NIK:</label>
+                            <input type="text" name="search_query" id="search_query" class="form-control" placeholder="Nama Karyawan atau NIK" value="{{ old('search_query', request('search_query')) }}">
+                        </div>
+                        <div class="col-md-auto mb-2">
+                            <button type="submit" class="btn btn-info" id="btnCari"><i class="fas fa-search"></i> Cari</button>
+                            <a href="{{ route('karyawan.index') }}" class="btn btn-secondary"><i class="fas fa-sync-alt"></i> Reset</a>
+                            <button type="button" class="btn btn-success" id="btnCetakExcel"><i class="fas fa-file-excel"></i> Cetak Excel</button>
+                        </div>
                     </div>
                 </form>
-
 
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped">
                         <thead>
                             <tr>
                                 <th style="width: 50px;">No</th>
+                                <th>ID Karyawan</th> 
                                 <th>NIK</th>
                                 <th>Nama Karyawan</th>
                                 <th>Jabatan</th>
                                 <th>Status</th>
                                 <th>Email</th>
                                 <th>No. Handphone</th>
+                                <th>Gaji Pokok</th>
                                 <th>Foto</th>
-                                <th style="width: 180px;">Aksi</th>
+                                <th style="width: 200px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($karyawan as $item)
                             <tr>
                                 <td>{{ $loop->iteration + ($karyawan->currentPage() - 1) * $karyawan->perPage() }}</td>
+                                <td>{{ $item->id_karyawan }}</td> 
                                 <td>{{ $item->nik ?? '-' }}</td>
                                 <td>{{ $item->nama_karyawan }}</td>
                                 <td>{{ $item->jabatan }}</td>
                                 <td>{{ $item->status }}</td>
                                 <td>{{ $item->email }}</td>
                                 <td>{{ $item->no_handphone }}</td>
+                                <td>Rp{{ number_format($item->gaji_pokok, 2, ',', '.') }}</td>
                                 <td>
                                     @if ($item->foto)
-                                    <img src="{{ asset('storage/' . $item->foto) }}" alt="{{ $item->nama_karyawan }}" class="img-thumbnail" style="width: 50px; height: 67px; object-fit: cover;" onerror="this.onerror=null;this.src='https:placehold.co/50x67/cccccc/333333?text=No+Foto';">
+                                        <img src="{{ asset('storage/' . $item->foto) }}" alt="{{ $item->nama_karyawan }}" class="img-thumbnail" style="width: 50px; height: 67px; object-fit: cover;" onerror="this.onerror=null;this.src='https://placehold.co/50x67/cccccc/333333?text=No+Foto';" loading="lazy">
                                     @else
-                                        <img src="https://placehold.co/50x50/cccccc/333333?text=No+Foto" alt="No Photo" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">
+                                        <img src="https://placehold.co/50x67/cccccc/333333?text=No+Foto" alt="No Photo" class="img-thumbnail" style="width: 50px; height: 67px; object-fit: cover;">
                                     @endif
                                 </td>
                                 <td>
-                                    {{-- Tombol Detail yang memicu modal --}}
                                     <button type="button" class="btn btn-info btn-sm" onclick="showKaryawanDetail('{{ $item->id }}')">Detail</button>
                                     <a href="{{ route('karyawan.edit', $item->id) }}" class="btn btn-warning btn-sm">Edit</a>
-
-                                    {{-- Tombol Hapus yang memicu SweetAlert --}}
                                     <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete('{{ $item->id }}')">Hapus</button>
-
-                                    {{-- Form DELETE tersembunyi (akan disubmit oleh JavaScript) --}}
                                     <form id="delete-form-{{ $item->id }}" action="{{ route('karyawan.destroy', $item->id) }}" method="POST" style="display: none;">
                                         @csrf
                                         @method('DELETE')
@@ -110,16 +106,14 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="10" class="text-center">Tidak ada data karyawan.</td>
+                                <td colspan="11" class="text-center">Tidak ada data karyawan.</td> 
                             </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
 
-                {{-- Tautan Paginasi --}}
                 <div class="d-flex justify-content-center mt-3">
-                    {{-- Pastikan appends(request()->query()) digunakan agar parameter limit tetap ada saat navigasi paginasi --}}
                     {{ $karyawan->appends(request()->query())->links('pagination::bootstrap-4') }}
                 </div>
             </div>
@@ -140,14 +134,17 @@
             <div class="modal-body">
                 <div class="row">
                     <div class="col-md-4 text-center">
-                        <img id="detail-foto" src="https://placehold.co/150x150/cccccc/333333?text=No+Foto" alt="Foto Karyawan" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                        <img id="detail-foto" src="https://placehold.co/150x200/cccccc/333333?text=No+Foto" alt="Foto Karyawan" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 200px; object-fit: cover;">
                         <h4 id="detail-nama_karyawan-modal"></h4>
                         <p class="text-muted" id="detail-jabatan-modal"></p>
                     </div>
                     <div class="col-md-8">
                         <ul class="list-group list-group-unbordered mb-3">
                             <li class="list-group-item">
-                                <b>ID</b> <a class="float-right" id="detail-id"></a>
+                                <b>ID Database</b> <a class="float-right" id="detail-primary-id"></a> {{-- ID Primary Key --}}
+                            </li>
+                            <li class="list-group-item">
+                                <b>ID Karyawan</b> <a class="float-right" id="detail-id-karyawan"></a> {{-- ID Karyawan yang otomatis --}}
                             </li>
                             <li class="list-group-item">
                                 <b>NIK</b> <a class="float-right" id="detail-nik"></a>
@@ -185,11 +182,26 @@
 </div>
 
 @endsection
-
-{{-- Script untuk SweetAlert2 dan Modal Detail --}}
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> {{-- Pastikan SweetAlert2 terhubung --}}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
 <script>
+    // JavaScript untuk tombol Cetak Excel
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('karyawanFilterForm');
+        const btnCetakExcel = document.getElementById('btnCetakExcel');
+        const originalFormAction = form.action;
+
+        if (btnCetakExcel) {
+            btnCetakExcel.addEventListener('click', function() {
+                form.action = "{{ route('karyawan.export_excel') }}";
+                form.submit();
+                setTimeout(() => {
+                    form.action = originalFormAction;
+                }, 100);
+            });
+        }
+    });
+
     // Fungsi untuk menampilkan detail karyawan menggunakan modal
     function showKaryawanDetail(id) {
         // Lakukan AJAX request ke endpoint show() di controller Anda
@@ -202,7 +214,8 @@
             })
             .then(data => {
                 // Isi data ke dalam elemen-elemen modal
-                document.getElementById('detail-id').innerText = data.id;
+                document.getElementById('detail-primary-id').innerText = data.id; // ID Primary Key
+                document.getElementById('detail-id-karyawan').innerText = data.id_karyawan; // ID Karyawan yang otomatis
                 document.getElementById('detail-nik').innerText = data.nik ?? '-';
                 document.getElementById('detail-nama_karyawan-modal').innerText = data.nama_karyawan;
                 document.getElementById('detail-jabatan-modal').innerText = data.jabatan;
@@ -217,13 +230,14 @@
                 // Tampilkan foto karyawan di modal
                 const fotoElement = document.getElementById('detail-foto');
                 if (data.foto) {
+                    // Path foto diubah ke 'uploads/karyawan_photos'
                     fotoElement.src = `{{ asset('storage') }}/${data.foto}`;
                 } else {
-                    fotoElement.src = 'https://placehold.co/150x150/cccccc/333333?text=No+Foto';
+                    fotoElement.src = 'https://placehold.co/150x200/cccccc/333333?text=No+Foto'; // Placeholder 3x4
                 }
                 fotoElement.onerror = function() {
                     this.onerror=null;
-                    this.src='https://placehold.co/150x150/cccccc/333333?text=No+Foto';
+                    this.src='https://placehold.co/150x200/cccccc/333333?text=No+Foto'; // Placeholder 3x4
                 };
 
 
@@ -238,7 +252,7 @@
 
     // Fungsi bantu untuk format Rupiah
     function formatRupiah(angka) {
-        if (angka === null || angka === undefined) {
+        if (angka === null || angka === undefined || isNaN(angka)) {
             return 'Rp 0';
         }
         var reverse = angka.toString().split('').reverse().join(''),

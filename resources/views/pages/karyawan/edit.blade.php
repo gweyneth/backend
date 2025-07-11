@@ -29,6 +29,15 @@
                     @csrf {{-- Token CSRF untuk keamanan --}}
                     @method('PUT') {{-- Method spoofing untuk HTTP PUT --}}
 
+                    {{-- Menambahkan input id_karyawan yang readonly --}}
+                    <div class="form-group">
+                        <label for="id_karyawan">ID Karyawan</label>
+                        <input type="text" name="id_karyawan" id="id_karyawan" class="form-control @error('id_karyawan') is-invalid @enderror" value="{{ old('id_karyawan', $karyawan->id_karyawan) }}" readonly required>
+                        @error('id_karyawan')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
                     <div class="form-group">
                         <label for="nama_karyawan">Nama Karyawan</label>
                         <input type="text" name="nama_karyawan" id="nama_karyawan" class="form-control @error('nama_karyawan') is-invalid @enderror" value="{{ old('nama_karyawan', $karyawan->nama_karyawan) }}" required>
@@ -112,6 +121,7 @@
                         @if ($karyawan->foto)
                             <div class="mt-2">
                                 <p>Foto saat ini:</p>
+                                {{-- Path foto diubah ke 'uploads/karyawan_photos' --}}
                                 <img src="{{ asset('storage/' . $karyawan->foto) }}" alt="Foto {{ $karyawan->nama_karyawan }}" class="img-thumbnail" style="width: 100px; height: 133px; object-fit: cover;"> {{-- Rasio 3x4 --}}
                             </div>
                         @else

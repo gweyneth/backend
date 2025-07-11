@@ -62,6 +62,41 @@
                         </li> --}}
                     </ul>
                 </li>
+                @endif {{-- End of Admin Menu --}}
+                {{-- @if(Auth::check() && Auth::user()->isKasir()) jika hanya kasir --}}
+                @if(Auth::check() && (Auth::user()->isAdmin() || Auth::user()->isKasir()))
+                <li class="nav-item">
+                    <a href="{{ route('pelanggan.index') }}"
+                        class="nav-link {{ Request::is('pelanggan*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-address-book"></i>
+                        <p>Data Pelanggan</p>
+                    </a>
+                </li>
+                <li class="nav-item has-treeview {{ Request::is('transaksi*') ? 'menu-open' : '' }}">
+                    <a href="#" class="nav-link {{ Request::is('transaksi*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-exchange-alt"></i>
+                        <p>
+                            Transaksi
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{{ route('transaksi.index') }}" class="nav-link {{ Request::is('transaksi*') && !Request::is('transaksi/create') ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Log Transaksi</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('transaksi.create') }}" class="nav-link {{ Request::is('transaksi/create') ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Transaksi Baru</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                @endif {{-- End of Kasir Menu --}}
+                @if(Auth::check() && Auth::user()->isAdmin())
                 <li class="nav-item has-treeview {{ Request::is('produk*') || Request::is('kategoribarang*') || Request::is('bahan*') || Request::is('satuan*') ? 'menu-open' : '' }}">
                     <a href="#" class="nav-link {{ Request::is('produk*') || Request::is('kategoribarang*') || Request::is('bahan*') || Request::is('satuan*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-boxes"></i>
@@ -162,40 +197,6 @@
                     </ul>
                 </li>
                 @endif {{-- End of Admin Menu --}}
-
-                {{-- @if(Auth::check() && Auth::user()->isKasir()) jika hanya kasir --}}
-                @if(Auth::check() && (Auth::user()->isAdmin() || Auth::user()->isKasir()))
-                <li class="nav-item">
-                    <a href="{{ route('pelanggan.index') }}"
-                        class="nav-link {{ Request::is('pelanggan*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-address-book"></i>
-                        <p>Data Pelanggan</p>
-                    </a>
-                </li>
-                <li class="nav-item has-treeview {{ Request::is('transaksi*') ? 'menu-open' : '' }}">
-                    <a href="#" class="nav-link {{ Request::is('transaksi*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-exchange-alt"></i>
-                        <p>
-                            Transaksi
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="{{ route('transaksi.index') }}" class="nav-link {{ Request::is('transaksi*') && !Request::is('transaksi/create') ? 'active' : '' }}">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Log Transaksi</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{{ route('transaksi.create') }}" class="nav-link {{ Request::is('transaksi/create') ? 'active' : '' }}">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Transaksi Baru</p>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-                @endif {{-- End of Kasir Menu --}}
                 @if(Auth::check())
                 <li class="nav-item">
                     <a href="#" class="nav-link {{ Request::is('pengaturan/akun-saya*') ? 'active' : '' }}">

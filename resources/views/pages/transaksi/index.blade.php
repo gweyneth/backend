@@ -22,29 +22,38 @@
                 <h5 class="card-title">Daftar Transaksi</h5>
                 <span class="float-right">
                     <a href="{{ route('transaksi.create') }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i>Transaksi Baru</a>
-                    <a href="{{ route('transaksi.export-excel') }}" class="btn btn-success btn-sm"><i class="fas fa-file-excel"></i> Cetak Excel</a>
                 </span>
             </div>
             <div class="card-body">
                 @include('components.alert')
-                {{-- Form Filter Tanggal dan Pencarian --}}
                 <form action="{{ route('transaksi.index') }}" method="GET" class="mb-4">
                     <div class="form-row align-items-end">
-                        <div class="col-md-3 mb-2">
+                        <div class="col-auto mb-2">
+                            <div class="form-group mb-0">
+                                <label for="limit" class="col-form-label mr-2">Limit:</label>
+                                <select name="limit" id="limit" class="form-control" onchange="this.form.submit()">
+                                    @foreach ([5, 10, 25, 50, 100] as $option)
+                                        <option value="{{ $option }}" {{ request('limit', 10) == $option ? 'selected' : '' }}>{{ $option }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-auto mb-2">
                             <label for="start_date">Dari Tanggal:</label>
                             <input type="date" name="start_date" id="start_date" class="form-control" value="{{ old('start_date', $startDate ?? '') }}">
                         </div>
-                        <div class="col-md-3 mb-2">
+                        <div class="col-auto mb-2">
                             <label for="end_date">Sampai Tanggal:</label>
                             <input type="date" name="end_date" id="end_date" class="form-control" value="{{ old('end_date', $endDate ?? '') }}">
                         </div>
-                        <div class="col-md-3 mb-2">
+                        <div class="col-auto mb-2">
                             <label for="search_query">Cari Pelanggan / No. Order:</label>
                             <input type="text" name="search_query" id="search_query" class="form-control" placeholder="Nama Pelanggan atau No. Order" value="{{ old('search_query', $searchQuery ?? '') }}">
                         </div>
-                        <div class="col-md-3 mb-2">
+                        <div class="col-auto mb-2">
                             <button type="submit" class="btn btn-info"><i class="fas fa-search"></i> Cari</button>
                             <a href="{{ route('transaksi.index') }}" class="btn btn-secondary"><i class="fas fa-sync-alt"></i> Reset</a>
+                            <a href="{{ route('transaksi.export-excel') }}" class="btn btn-success btn-sm"><i class="fas fa-file-excel"></i> Cetak Excel</a>
                         </div>
                     </div>
                 </form>

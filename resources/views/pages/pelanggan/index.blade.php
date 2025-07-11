@@ -25,6 +25,37 @@
                 </span>
             </div>
             <div class="card-body">
+                @include('components.alert')
+                <form action="{{ route('pelanggan.index') }}" method="GET" id="pelangganFilterForm" class="mb-4">
+                    <div class="form-row align-items-end">
+                        <div class="col-auto mb-2">
+                            <div class="form-group mb-0">
+                                <label for="limit" class="col-form-label mr-2">Limit:</label>
+                                <select name="limit" id="limit" class="form-control" onchange="this.form.submit()">
+                                    @foreach ([5, 10, 25, 50, 100] as $option)
+                                        <option value="{{ $option }}" {{ request('limit', 10) == $option ? 'selected' : '' }}>{{ $option }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <label for="start_date">Dari Tanggal:</label>
+                            <input type="date" name="start_date" id="start_date" class="form-control" value="{{ old('start_date', request('start_date')) }}">
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <label for="end_date">Sampai Tanggal:</label>
+                            <input type="date" name="end_date" id="end_date" class="form-control" value="{{ old('end_date', request('end_date')) }}">
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <label for="search_query">Cari Nama / Kode Pelanggan:</label>
+                            <input type="text" name="search_query" id="search_query" class="form-control" placeholder="Nama atau Kode Pelanggan" value="{{ old('search_query', request('search_query')) }}">
+                        </div>
+                        <div class="col-md-auto mb-2">
+                            <button type="submit" class="btn btn-info"><i class="fas fa-search"></i> Cari</button>
+                            <a href="{{ route('pelanggan.index') }}" class="btn btn-secondary"><i class="fas fa-sync-alt"></i> Reset</a>
+                        </div>
+                    </div>
+                </form>
                 <table class="table table-bordered table-striped">
                     <thead>
                         <tr>

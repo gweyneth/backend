@@ -81,7 +81,7 @@
                             <option value="">Tidak Ada Kasbon</option>
                             @foreach ($kasbonPengeluaran as $kasbon)
                                 <option value="{{ $kasbon->id }}" data-kasbon-amount="{{ $kasbon->total }}" {{ old('pengeluaran_kasbon_id') == $kasbon->id ? 'selected' : '' }}>
-                                    {{ $kasbon->keterangan }} (Rp{{ number_format($kasbon->total, 2, ',', '.') }}) - {{ $kasbon->created_at->format('d/m/Y') }}
+                                    {{ $kasbon->keterangan }} (Rp{{ number_format($kasbon->total, 2, ',', '.') }}) - Sisa: Rp{{ number_format($kasbon->sisa_kasbon, 2, ',', '.') }}
                                 </option>
                             @endforeach
                         </select>
@@ -140,7 +140,6 @@
             sisaGajiInput.value = formatRupiah(sisaGaji);
         }
 
-        // Event listener untuk perubahan karyawan
         karyawanSelect.addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
             const gajiPokok = selectedOption.dataset.gajiPokok;
@@ -149,18 +148,15 @@
             } else {
                 jumlahGajiInput.value = 0;
             }
-            calculateGaji(); // Hitung ulang setelah gaji pokok berubah
+            calculateGaji(); 
         });
 
-        // Event listeners untuk perubahan bonus dan kasbon
+        
         jumlahGajiInput.addEventListener('input', calculateGaji);
         bonusPersenInput.addEventListener('input', calculateGaji);
         kasbonSelect.addEventListener('change', calculateGaji);
 
-        // Panggil calculateGaji saat halaman dimuat untuk nilai awal (jika ada old input)
         calculateGaji();
-
-        // Jika ada old input untuk karyawan_id, trigger change event untuk mengisi gaji pokok
         if (karyawanSelect.value) {
             karyawanSelect.dispatchEvent(new Event('change'));
         }

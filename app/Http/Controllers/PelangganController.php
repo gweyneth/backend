@@ -2,21 +2,42 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Pelanggan;
+use App\Models\Pelanggan; // Pastikan model Pelanggan sudah ada
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB; // Pastikan ini di-import jika digunakan
 
 class PelangganController extends Controller
 {
-    /**
-     * Menampilkan daftar semua pelanggan.
-     *
-     * @return \Illuminate\View\View
-     */
-    public function index()
+    public function index(Request $request) // Tambahkan Request $request
     {
-        $data = Pelanggan::latest()->get(); // Mengambil semua data pelanggan terbaru
-        return view('pages.pelanggan.index', compact('data'));
+        // Ambil parameter filter dari request
+        $limit = $request->input('limit', 10); // Default 10 data per halaman
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $searchQuery = $request->input('search_query');
+
+        $query = Pelanggan::query(); // Mulai query
+
+        // Terapkan filter tanggal jika ada
+        if ($startDate) {
+            $query->whereDate('created_at', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->whereDate('created_at', '<=', $endDate);
+        }
+
+        // Terapkan filter pencarian jika ada (berdasarkan nama atau kode_pelanggan)
+        if ($searchQuery) {
+            $query->where(function($q) use ($searchQuery) {
+                $q->where('nama', 'like', '%' . $searchQuery . '%')
+                  ->orWhere('kode_pelanggan', 'like', '%' . $searchQuery . '%');
+            });
+        }
+
+        // Ambil data dengan paginasi, urutkan berdasarkan yang terbaru dibuat
+        $data = $query->latest()->paginate($limit);
+
+        // Kirim semua variabel yang diperlukan ke view
+        return view('pages.pelanggan.index', compact('data', 'limit', 'startDate', 'endDate', 'searchQuery'));
     }
 
     /**
@@ -41,7 +62,7 @@ class PelangganController extends Controller
         $validatedData = $request->validate([
             'kode_pelanggan' => 'required|string|unique:pelanggan,kode_pelanggan|max:20',
             'nama' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255',
+            'email' => 'required|email|unique:pelanggan,email|max:255',
             'no_hp' => 'required|string|max:20',
             'alamat' => 'nullable|string|max:500',
         ]);
@@ -63,7 +84,6 @@ class PelangganController extends Controller
     public function show(int $id)
     {
         $pelanggan = Pelanggan::findOrFail($id);
-        // Mengembalikan data pelanggan dalam format JSON
         return response()->json($pelanggan);
     }
 
@@ -93,7 +113,7 @@ class PelangganController extends Controller
         $validatedData = $request->validate([
             'kode_pelanggan' => 'required|string|max:20|unique:pelanggan,kode_pelanggan,' . $pelanggan->id,
             'nama' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255',
+            'email' => 'required|email|max:255|unique:pelanggan,email,' . $pelanggan->id,
             'no_hp' => 'required|string|max:20',
             'alamat' => 'nullable|string|max:500',
         ]);

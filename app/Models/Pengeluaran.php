@@ -9,28 +9,30 @@ class Pengeluaran extends Model
 {
     use HasFactory;
 
-    protected $table = 'pengeluaran'; // Nama tabel yang sesuai di database
+    protected $table = 'pengeluaran'; 
 
     protected $fillable = [
         'jenis_pengeluaran',
-        'karyawan_id', // Pastikan ini ada jika menggunakan relasi untuk Kasbon Karyawan
+        'karyawan_id', 
         'keterangan',
         'jumlah',
         'harga',
         'total',
+        'sisa_kasbon',   
+        'status_kasbon', 
     ];
 
     protected $casts = [
-        'harga' => 'decimal:2', // Casting harga ke desimal dengan 2 angka di belakang koma
-        'total' => 'decimal:2', // Casting total ke desimal dengan 2 angka di belakang koma
+        'harga' => 'decimal:2',
+        'total' => 'decimal:2',
+        'sisa_kasbon' => 'decimal:2', 
     ];
-
-    /**
-     * Mendefinisikan relasi Many-to-One dengan model Karyawan.
-     * Ini digunakan untuk mengambil data karyawan jika jenis pengeluaran adalah 'Kasbon Karyawan'.
-     */
     public function karyawan()
     {
         return $this->belongsTo(Karyawan::class);
+    }
+    public function gajiKaryawan()
+    {
+        return $this->hasOne(GajiKaryawan::class, 'pengeluaran_kasbon_id');
     }
 }

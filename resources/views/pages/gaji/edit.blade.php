@@ -17,7 +17,7 @@
 
 @section('content')
 <div class="row">
-    <div class="col-md-12">
+    <div class="col-md-8 offset-md-2">
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title">Form Edit Gaji Karyawan</h5>
@@ -82,7 +82,7 @@
                             <option value="">Tidak Ada Kasbon</option>
                             @foreach ($kasbonPengeluaran as $kasbon)
                                 <option value="{{ $kasbon->id }}" data-kasbon-amount="{{ $kasbon->total }}" {{ old('pengeluaran_kasbon_id', $gajiKaryawan->pengeluaran_kasbon_id) == $kasbon->id ? 'selected' : '' }}>
-                                    {{ $kasbon->keterangan }} (Rp{{ number_format($kasbon->total, 2, ',', '.') }}) - {{ $kasbon->created_at->format('d/m/Y') }}
+                                    {{ $kasbon->keterangan }} (Rp{{ number_format($kasbon->total, 2, ',', '.') }}) - Sisa: Rp{{ number_format($kasbon->sisa_kasbon, 2, ',', '.') }}
                                 </option>
                             @endforeach
                         </select>
@@ -140,8 +140,6 @@
             const sisaGaji = (gajiPokok + jumlahBonus) - kasbonAmount;
             sisaGajiInput.value = formatRupiah(sisaGaji);
         }
-
-        // Event listener untuk perubahan karyawan (untuk mengupdate gaji pokok)
         karyawanSelect.addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
             const gajiPokok = selectedOption.dataset.gajiPokok;
@@ -150,21 +148,17 @@
             } else {
                 jumlahGajiInput.value = 0;
             }
-            calculateGaji(); // Hitung ulang setelah gaji pokok berubah
+            calculateGaji(); /
         });
-
-        // Event listeners untuk perubahan jumlah gaji, bonus, dan kasbon
         jumlahGajiInput.addEventListener('input', calculateGaji);
         bonusPersenInput.addEventListener('input', calculateGaji);
         kasbonSelect.addEventListener('change', calculateGaji);
 
-        // Panggil calculateGaji saat halaman dimuat untuk nilai awal
+       
         calculateGaji();
 
-        // Jika ada old input untuk karyawan_id, trigger change event untuk mengisi gaji pokok
-        // Ini penting untuk memastikan gaji pokok terisi saat halaman edit dimuat
+       
         if (karyawanSelect.value) {
-            // Ini akan memicu event change dan mengisi jumlah_gaji dari data-gaji-pokok
             karyawanSelect.dispatchEvent(new Event('change'));
         }
     });

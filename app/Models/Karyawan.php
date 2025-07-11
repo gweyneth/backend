@@ -12,6 +12,7 @@ class Karyawan extends Model
     protected $table = 'karyawan'; // Nama tabel yang sesuai
 
     protected $fillable = [
+        'id_karyawan',
         'nama_karyawan',
         'nik',
         'jabatan',
@@ -20,10 +21,15 @@ class Karyawan extends Model
         'no_handphone',
         'email',
         'gaji_pokok',
-        'foto', // Pastikan 'foto' ada di fillable jika ingin diisi massal
+        'foto',
     ];
 
     protected $casts = [
         'gaji_pokok' => 'decimal:2', // Pastikan gaji_pokok di-cast sebagai decimal
     ];
+
+    public function gajiKaryawan()
+    {
+        return $this->hasMany(GajiKaryawan::class);
+    }
 }

@@ -9,7 +9,7 @@ use App\Http\Controllers\PerusahaanController;
 use App\Http\Controllers\RekeningController;
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\KasbonKaryawanController;
-use App\Http\Controllers\LoginController; 
+use App\Http\Controllers\LoginController;
 use App\Http\Controllers\KategoriBarangController;
 use App\Http\Controllers\BahanController;
 use App\Http\Controllers\SatuanController;
@@ -32,8 +32,10 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('satuan', SatuanController::class);
         Route::resource('produk', ProdukController::class);
         Route::resource('karyawan', KaryawanController::class);
+        Route::get('karyawan/export/excel', [KaryawanController::class, 'exportExcel'])->name('karyawan.export_excel');
         Route::resource('pengeluaran', PengeluaranController::class);
         Route::resource('gaji', GajiKaryawanController::class);
+        Route::get('gaji-karyawan/export-excel', [GajiKaryawanController::class, 'exportExcel'])->name('gaji.export-excel');
         Route::singleton('perusahaan', PerusahaanController::class);
         Route::resource('rekening', RekeningController::class);
         Route::get('gaji/{id}/print', [GajiKaryawanController::class, 'print'])->name('gaji.print');
@@ -43,7 +45,6 @@ Route::middleware(['auth'])->group(function () {
         // Route::get('kasbon-karyawan', [KasbonKaryawanController::class, 'index'])->name('kasbon-karyawan.index');
         Route::get('omset-penjualan', [OmsetPenjualanController::class, 'index'])->name('omset.index');
         Route::get('omset-penjualan/export-excel', [OmsetPenjualanController::class, 'exportExcel'])->name('omset.export-excel');
-    
     });
 
     Route::middleware(['role:admin,kasir'])->group(function () {

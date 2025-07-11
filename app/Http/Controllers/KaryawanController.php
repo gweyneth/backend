@@ -2,204 +2,150 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Karyawan; // Import model Karyawan
+use App\Models\Karyawan;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage; // Untuk upload file foto
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel; 
+use App\Exports\KaryawanExport; 
 
 class KaryawanController extends Controller
 {
-
-    /**
-     * Menampilkan daftar semua karyawan.
-     *
-     * @return \Illuminate\View\View
-     */
-    
-
-     public function index(Request $request)
-     {
-         // Ambil limit dari request, default 10 jika tidak ada
-         $limit = $request->input('limit', 10);
- 
-         $karyawan = Karyawan::latest()->paginate($limit); // Gunakan paginate()
- 
-         return view('pages.karyawan.index', compact('karyawan', 'limit'));
-     }
-
-    /**
-     * Menampilkan form untuk membuat karyawan baru.
-     *
-     * @return \Illuminate\View\View
-     */
-    public function create()
+    public function index(Request $request)
     {
-        return view('pages.karyawan.create');
-    }
+        $limit = $request->input('limit', 10);
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $searchQuery = $request->input('search_query');
 
-    /**
-     * Menyimpan karyawan baru ke database.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function store(Request $request)
-    {
-        // Validasi data yang masuk dari form
-        $request->validate([
-            // 'id_karyawan' telah dihapus dari validasi karena tidak lagi digunakan
-            'nama_karyawan' => 'required|string|max:255',
-            'nik' => 'nullable|string|max:255',
-            'jabatan' => 'required|string|max:255',
-            'status' => 'required|in:Tetap,Kontrak,Magang',
-            'alamat' => 'required|string',
-            'no_handphone' => 'required|string|max:20',
-            'email' => 'required|email|unique:karyawan,email|max:255', // Pastikan email unik
-            'gaji_pokok' => 'required|numeric|min:0',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Maks 2MB
-        ], [
-            // Pesan kustom untuk validasi
-            'nama_karyawan.required' => 'Nama Karyawan wajib diisi.',
-            'jabatan.required' => 'Jabatan wajib diisi.',
-            'status.required' => 'Status wajib dipilih.',
-            'status.in' => 'Status tidak valid.',
-            'alamat.required' => 'Alamat wajib diisi.',
-            'no_handphone.required' => 'Nomor Handphone wajib diisi.',
-            'email.required' => 'Email wajib diisi.',
-            'email.email' => 'Format email tidak valid.',
-            'email.unique' => 'Email ini sudah terdaftar.',
-            'gaji_pokok.required' => 'Gaji Pokok wajib diisi.',
-            'gaji_pokok.numeric' => 'Gaji Pokok harus berupa angka.',
-            'foto.image' => 'File harus berupa gambar.',
-            'foto.mimes' => 'Format gambar yang diizinkan: jpeg, png, jpg, gif.',
-            'foto.max' => 'Ukuran gambar maksimal 2MB.',
-        ]);
+        $query = Karyawan::query();
 
-        $path_foto = null;
-        // Proses upload foto jika ada
-        if ($request->hasFile('foto')) {
-            // Simpan foto di direktori 'uploads' dalam 'public' disk
-            // Laravel akan mengembalikan path relatif dari disk 'public', contoh: uploads/namafileunik.jpg
-            $path_foto = $request->file('foto')->store('uploads', 'public');
+        if ($startDate) {
+            $query->whereDate('created_at', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->whereDate('created_at', '<=', $endDate);
         }
 
-        // Buat data karyawan baru
-        Karyawan::create([
-            // 'id_karyawan' telah dihapus dari sini karena tidak lagi digunakan
-            'nama_karyawan' => $request->nama_karyawan,
-            'nik' => $request->nik,
-            'jabatan' => $request->jabatan,
-            'status' => $request->status,
-            'alamat' => $request->alamat,
-            'no_handphone' => $request->no_handphone,
-            'email' => $request->email,
-            'gaji_pokok' => $request->gaji_pokok,
-            'foto' => $path_foto, // Simpan path foto
-        ]);
+        
+        if ($searchQuery) {
+            $query->where(function($q) use ($searchQuery) {
+                $q->where('nama_karyawan', 'like', '%' . $searchQuery . '%')
+                  ->orWhere('nik', 'like', '%' . $searchQuery . '%');
+            });
+        }
 
-        return redirect()->route('karyawan.index')->with('success', 'Data karyawan berhasil ditambahkan!');
+        
+        $karyawan = $query->latest()->paginate($limit);
+
+        return view('pages.karyawan.index', compact('karyawan', 'limit', 'startDate', 'endDate', 'searchQuery'));
     }
 
-    /**
-     * Mengambil detail karyawan tertentu dalam format JSON.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\JsonResponse
-     */
+    
+    public function create()
+    {
+        $nextIdKaryawan = $this->generateNextIdKaryawan();
+        return view('pages.karyawan.create', compact('nextIdKaryawan'));
+    }
+
+    public function store(Request $request)
+    {
+        $validatedData = $request->validate([
+            'id_karyawan' => 'required|string|unique:karyawan,id_karyawan|max:20', 
+            'nama_karyawan' => 'required|string|max:255',
+            'nik' => 'nullable|string|max:20',
+            'jabatan' => 'required|string|max:100',
+            'status' => 'required|in:Tetap,Kontrak,Magang', 
+            'alamat' => 'nullable|string|max:500',
+            'no_handphone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255|unique:karyawan,email', 
+            'gaji_pokok' => 'required|numeric|min:0',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
+
+        try {
+            if ($request->hasFile('foto')) {
+                $validatedData['foto'] = $request->file('foto')->store('uploads/karyawan_photos', 'public');
+            }
+
+            Karyawan::create($validatedData);
+            return redirect()->route('karyawan.index')->with('success', 'Data karyawan berhasil ditambahkan!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menambahkan karyawan: ' . $e->getMessage())->withInput();
+        }
+    }
+
     public function show(int $id)
     {
-        // Cari karyawan berdasarkan ID utama (primary key), jika tidak ditemukan akan menampilkan 404
         $karyawan = Karyawan::findOrFail($id);
-
-        // Mengembalikan data karyawan dalam format JSON
         return response()->json($karyawan);
     }
 
-    /**
-     * Menampilkan form untuk mengedit karyawan tertentu.
-     *
-     * @param  int  $id
-     * @return \Illuminate\View\View
-     */
     public function edit(int $id)
     {
         $karyawan = Karyawan::findOrFail($id);
         return view('pages.karyawan.edit', compact('karyawan'));
     }
 
-    /**
-     * Memperbarui data karyawan tertentu di database.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function update(Request $request, int $id)
     {
         $karyawan = Karyawan::findOrFail($id);
 
-        // Validasi data yang masuk untuk update
-        $request->validate([
+        $validatedData = $request->validate([
+            'id_karyawan' => 'required|string|max:20|unique:karyawan,id_karyawan,' . $karyawan->id, 
             'nama_karyawan' => 'required|string|max:255',
-            'nik' => 'nullable|string|max:255',
-            'jabatan' => 'required|string|max:255',
+            'nik' => 'nullable|string|max:20',
+            'jabatan' => 'required|string|max:100',
             'status' => 'required|in:Tetap,Kontrak,Magang',
-            'alamat' => 'required|string',
-            'no_handphone' => 'required|string|max:20',
-            // Email harus unik kecuali untuk email karyawan itu sendiri
-            'email' => 'required|email|max:255|unique:karyawan,email,' . $karyawan->id,
+            'alamat' => 'nullable|string|max:500',
+            'no_handphone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255|unique:karyawan,email,' . $karyawan->id,
             'gaji_pokok' => 'required|numeric|min:0',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Maks 2MB
-        ], [
-            // Pesan kustom untuk validasi
-            'nama_karyawan.required' => 'Nama Karyawan wajib diisi.',
-            'jabatan.required' => 'Jabatan wajib diisi.',
-            'status.required' => 'Status wajib dipilih.',
-            'status.in' => 'Status tidak valid.',
-            'alamat.required' => 'Alamat wajib diisi.',
-            'no_handphone.required' => 'Nomor Handphone wajib diisi.',
-            'email.required' => 'Email wajib diisi.',
-            'email.email' => 'Format email tidak valid.',
-            'email.unique' => 'Email ini sudah terdaftar.',
-            'gaji_pokok.required' => 'Gaji Pokok wajib diisi.',
-            'gaji_pokok.numeric' => 'Gaji Pokok harus berupa angka.',
-            'foto.image' => 'File harus berupa gambar.',
-            'foto.mimes' => 'Format gambar yang diizinkan: jpeg, png, jpg, gif.',
-            'foto.max' => 'Ukuran gambar maksimal 2MB.',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', 
         ]);
 
-        // Ambil semua data request kecuali token, method, dan foto (foto akan ditangani terpisah)
-        $data = $request->except(['_token', '_method', 'foto']);
-
-        // Proses upload foto jika ada
-        if ($request->hasFile('foto')) {
-            // Hapus foto lama jika ada dan file-nya benar-benar ada di storage
-            // Path penyimpanan foto lama sekarang juga disesuaikan ke 'uploads'
-            if ($karyawan->foto && Storage::disk('public')->exists($karyawan->foto)) {
-                Storage::disk('public')->delete($karyawan->foto);
+        try {
+            if ($request->hasFile('foto')) {
+                if ($karyawan->foto && Storage::disk('public')->exists($karyawan->foto)) {
+                    Storage::disk('public')->delete($karyawan->foto);
+                }
+                $validatedData['foto'] = $request->file('foto')->store('uploads/karyawan_photos', 'public');
             }
-            // Simpan foto baru di public/storage/uploads
-            $path_foto = $request->file('foto')->store('uploads', 'public');
-            $data['foto'] = $path_foto; // Tambahkan path foto baru ke data yang akan diupdate
+
+            $karyawan->update($validatedData);
+            return redirect()->route('karyawan.index')->with('success', 'Data karyawan berhasil diperbarui!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal memperbarui karyawan: ' . $e->getMessage())->withInput();
         }
-
-        // Perbarui data karyawan di database
-        $karyawan->update($data);
-
-        return redirect()->route('karyawan.index')->with('success', 'Data karyawan berhasil diperbarui!');
     }
 
     public function destroy(int $id)
     {
         $karyawan = Karyawan::findOrFail($id);
-
-        // Hapus foto terkait jika ada
-        if ($karyawan->foto && Storage::disk('public')->exists($karyawan->foto)) {
-            Storage::disk('public')->delete($karyawan->foto);
+        try {
+            if ($karyawan->foto && Storage::disk('public')->exists($karyawan->foto)) {
+                Storage::disk('public')->delete($karyawan->foto);
+            }
+            $karyawan->delete();
+            return redirect()->route('karyawan.index')->with('success', 'Data karyawan berhasil dihapus!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus karyawan: ' . $e->getMessage());
         }
+    }
 
-        // Hapus data karyawan dari database
-        $karyawan->delete();
+    public function exportExcel(Request $request)
+    {
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $searchQuery = $request->input('search_query');
 
-        return redirect()->route('karyawan.index')->with('success', 'Data karyawan berhasil dihapus!');
+        return Excel::download(new KaryawanExport($startDate, $endDate, $searchQuery), 'data_karyawan.xlsx');
+    }
+
+    
+    private function generateNextIdKaryawan()
+    {
+        $latestKaryawan = Karyawan::latest('id')->first();
+        $nextId = ($latestKaryawan) ? $latestKaryawan->id + 1 : 1;
+        return 'KRY-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
     }
 }

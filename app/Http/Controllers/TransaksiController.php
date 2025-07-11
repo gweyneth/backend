@@ -24,6 +24,8 @@ class TransaksiController extends Controller
     {
         $query = Transaksi::with(['pelanggan'])->latest();
 
+        $limit = $request->input('limit', 10);
+
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
@@ -41,7 +43,8 @@ class TransaksiController extends Controller
                 $q->where('nama', 'like', '%' . $searchQuery . '%');
             })->orWhere('no_transaksi', 'like', '%' . $searchQuery . '%');
         }
-
+        $transaksi = $query->latest()->paginate($limit);
+        $totalTransaksi = $transaksi->sum('total');
         $transaksi = $query->get();
 
         $totalUangMuka = $transaksi->sum('uang_muka');

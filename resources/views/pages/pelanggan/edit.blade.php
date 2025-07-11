@@ -26,23 +26,23 @@
                 </span>
             </div>
             <div class="card-body">
-                {{-- Form untuk mengupdate data pelanggan --}}
                 <form action="{{ route('pelanggan.update', $pelanggan->id) }}" method="POST">
-                    @csrf {{-- Token CSRF untuk keamanan form --}}
-                    @method('PUT') {{-- Menggunakan metode PUT untuk update data --}}
+                    @csrf 
+                    @method('PUT') 
 
                     <div class="row">
-                        {{-- Kode Pelanggan (Hanya Tampil, tidak bisa diubah) --}}
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label class="form-label">Kode Pelanggan</label>
-                                {{-- Jika kode_pelanggan otomatis, tampilkan nilainya --}}
-                                <input type="text" class="form-control" value="{{ $pelanggan->kode_pelanggan ?? 'Otomatis Generate' }}" readonly>
-                                {{-- Gunakan null coalescing operator ?? jika kode_pelanggan bisa null --}}
+                                <input type="text" class="form-control" name="kode_pelanggan" value="{{ old('kode_pelanggan', $pelanggan->kode_pelanggan ?? 'Otomatis Generate') }}" readonly>
+                                @error('kode_pelanggan')
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
+                                @enderror
                             </div>
                         </div>
 
-                        {{-- Nama --}}
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label class="form-label">Nama</label>
@@ -55,7 +55,6 @@
                             </div>
                         </div>
 
-                        {{-- Alamat --}}
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label class="form-label">Alamat</label>
@@ -68,7 +67,6 @@
                             </div>
                         </div>
 
-                        {{-- No HP --}}
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label class="form-label">Nomor Handphone</label>

@@ -2,127 +2,133 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Perusahaan; // Import model Perusahaan
+use App\Models\Perusahaan;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage; // Untuk mengelola file (upload, hapus)
+use Illuminate\Support\Facades\Storage;
 
 class PerusahaanController extends Controller
 {
-    /**
-     * Menampilkan form untuk mengelola data perusahaan (baik membuat baru atau mengedit yang sudah ada).
-     * Metode ini dipanggil oleh rute GET /perusahaan (perusahaan.show)
-     *
-     * @return \Illuminate\View\View
-     */
+
+    public function edit()
+{
+    $perusahaan = Perusahaan::firstOrNew([]);
+    return view('.pages.perusahaan.edit', compact('perusahaan'));
+}
+
     public function show()
     {
-        // Mencari data perusahaan pertama atau membuat instance baru jika tidak ada.
-        // firstOrNew([]) akan mencari record berdasarkan kriteria kosong,
-        // jika tidak ada, ia akan membuat instance model baru tanpa menyimpannya ke DB.
         $perusahaan = Perusahaan::firstOrNew([]);
-
-        // Mengirimkan instance perusahaan ke view. View akan menyesuaikan tampilan
-        // berdasarkan apakah $perusahaan sudah ada (exists) atau belum.
         return view('pages.perusahaan.edit', compact('perusahaan'));
     }
 
-    /**
-     * Menyimpan atau memperbarui data perusahaan.
-     * Metode ini akan dipanggil oleh rute PUT/PATCH /perusahaan (perusahaan.update)
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function update(Request $request)
     {
-        // Mengambil instance perusahaan yang ada atau membuat yang baru jika belum ada.
-        // Ini memastikan kita selalu bekerja dengan objek model yang benar,
-        // baik itu record yang sudah ada atau yang akan dibuat.
+        // Ambil data perusahaan pertama, atau buat instance baru jika belum ada.
         $perusahaan = Perusahaan::firstOrNew([]);
 
-        // Validasi data yang masuk dari form.
-        // Untuk email, kita perlu pengecualian unique agar bisa mengupdate record yang sama.
-        // 'NULL' digunakan jika $perusahaan belum ada (untuk memastikan validasi unique bekerja saat create).
-        $request->validate([
+        $validatedData = $request->validate([
             'nama_perusahaan' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:perusahaan,email,' . ($perusahaan->exists ? $perusahaan->id : 'NULL'),
-            'alamat' => 'nullable|string',
+            'email' => 'required|email|max:255|unique:perusahaan,email,' . $perusahaan->id,
+            'alamat' => 'nullable|string|max:500',
             'alamat_tanggal' => 'nullable|string|max:255',
             'no_handphone' => 'nullable|string|max:20',
             'instagram' => 'nullable|string|max:255',
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Max 2MB
-            'favicon' => 'nullable|image|mimes:ico,png,svg|max:2048',
-            'logo_login' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'logo_lunas' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'logo_belum_lunas' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'qr_code' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048|dimensions:max_width=1200,max_height=700',
+            'favicon' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048|dimensions:max_width=72,max_height=72',
+            'logo_login' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048|dimensions:max_width=1200,max_height=700',
+            'logo_lunas' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048|dimensions:max_width=500,max_height=300',
+            'logo_belum_lunas' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048|dimensions:max_width=500,max_height=300',
+            'qr_code' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048|dimensions:max_width=700,max_height=700',
             'id_card_desain' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ], [
+            'nama_perusahaan.required' => 'Nama Perusahaan wajib diisi.',
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'email.unique' => 'Email ini sudah terdaftar.',
+            'logo.image' => 'File logo harus berupa gambar.',
+            'logo.max' => 'Ukuran logo maksimal 2MB.',
+            'logo.dimensions' => 'Dimensi logo tidak sesuai (maks 1200x700 px).',
+            'favicon.image' => 'File favicon harus berupa gambar.',
+            'favicon.max' => 'Ukuran favicon maksimal 2MB.',
+            'favicon.dimensions' => 'Dimensi favicon tidak sesuai (maks 72x72 px).',
+            'logo_login.image' => 'File logo login harus berupa gambar.',
+            'logo_login.max' => 'Ukuran logo login maksimal 2MB.',
+            'logo_login.dimensions' => 'Dimensi logo login tidak sesuai (maks 1200x700 px).',
+            'logo_lunas.image' => 'File logo lunas harus berupa gambar.',
+            'logo_lunas.max' => 'Ukuran logo lunas maksimal 2MB.',
+            'logo_lunas.dimensions' => 'Dimensi logo lunas tidak sesuai (maks 500x300 px).',
+            'logo_belum_lunas.image' => 'File logo belum lunas harus berupa gambar.',
+            'logo_belum_lunas.max' => 'Ukuran logo belum lunas maksimal 2MB.',
+            'logo_belum_lunas.dimensions' => 'Dimensi logo belum lunas tidak sesuai (maks 500x300 px).',
+            'qr_code.image' => 'File QR Code harus berupa gambar.',
+            'qr_code.max' => 'Ukuran QR Code maksimal 2MB.',
+            'qr_code.dimensions' => 'Dimensi QR Code tidak sesuai (maks 700x700 px).',
+            'id_card_desain.image' => 'File desain ID Card harus berupa gambar.',
+            'id_card_desain.max' => 'Ukuran desain ID Card maksimal 2MB.',
         ]);
 
-        // Ambil semua data request kecuali token dan method spoofing
-        $data = $request->except(['_token', '_method']);
-
-        // Fungsi bantu untuk mengupload atau mengupdate file gambar
-        $handleFileUpload = function ($file, $folder, $oldPath) {
-            if ($file) {
-                // Hapus file lama jika ada dan file-nya benar-benar ada di storage
-                if ($oldPath && Storage::disk('public')->exists($oldPath)) {
-                    Storage::disk('public')->delete($oldPath);
-                }
-                // Simpan file baru di direktori 'uploads/perusahaan/<folder>' dalam 'public' disk
-                $path = $file->store('uploads/perusahaan/' . $folder, 'public');
-                return $path;
+        // Proses upload dan hapus file lama untuk logo
+        if ($request->hasFile('logo')) {
+            if ($perusahaan->logo && Storage::disk('public')->exists($perusahaan->logo)) {
+                Storage::disk('public')->delete($perusahaan->logo);
             }
-            return $oldPath; // Kembalikan path lama jika tidak ada file baru diupload
-        };
+            $validatedData['logo'] = $request->file('logo')->store('uploads/perusahaan', 'public');
+        }
 
-        // Proses setiap file yang diupload atau pertahankan path lama
-        $data['logo'] = $handleFileUpload($request->file('logo'), 'logo', $perusahaan->logo);
-        $data['favicon'] = $handleFileUpload($request->file('favicon'), 'favicon', $perusahaan->favicon);
-        $data['logo_login'] = $handleFileUpload($request->file('logo_login'), 'logo_login', $perusahaan->logo_login);
-        $data['logo_lunas'] = $handleFileUpload($request->file('logo_lunas'), 'logo_lunas', $perusahaan->logo_lunas);
-        $data['logo_belum_lunas'] = $handleFileUpload($request->file('logo_belum_lunas'), 'logo_belum_lunas', $perusahaan->logo_belum_lunas);
-        $data['qr_code'] = $handleFileUpload($request->file('qr_code'), 'qr_code', $perusahaan->qr_code);
-        $data['id_card_desain'] = $handleFileUpload($request->file('id_card_desain'), 'id_card_desain', $perusahaan->id_card_desain);
+        // Proses upload dan hapus file lama untuk favicon
+        if ($request->hasFile('favicon')) {
+            if ($perusahaan->favicon && Storage::disk('public')->exists($perusahaan->favicon)) {
+                Storage::disk('public')->delete($perusahaan->favicon);
+            }
+            $validatedData['favicon'] = $request->file('favicon')->store('uploads/perusahaan', 'public');
+        }
 
-        // Mengisi atribut model dengan data yang divalidasi dan path file
-        $perusahaan->fill($data);
-        // Menyimpan model. Jika ini instance baru, akan melakukan INSERT. Jika sudah ada, akan melakukan UPDATE.
+        // Proses upload dan hapus file lama untuk logo_login
+        if ($request->hasFile('logo_login')) {
+            if ($perusahaan->logo_login && Storage::disk('public')->exists($perusahaan->logo_login)) {
+                Storage::disk('public')->delete($perusahaan->logo_login);
+            }
+            $validatedData['logo_login'] = $request->file('logo_login')->store('uploads/perusahaan', 'public');
+        }
+
+        // Proses upload dan hapus file lama untuk logo_lunas
+        if ($request->hasFile('logo_lunas')) {
+            if ($perusahaan->logo_lunas && Storage::disk('public')->exists($perusahaan->logo_lunas)) {
+                Storage::disk('public')->delete($perusahaan->logo_lunas);
+            }
+            $validatedData['logo_lunas'] = $request->file('logo_lunas')->store('uploads/perusahaan', 'public');
+        }
+
+        // Proses upload dan hapus file lama untuk logo_belum_lunas
+        if ($request->hasFile('logo_belum_lunas')) {
+            if ($perusahaan->logo_belum_lunas && Storage::disk('public')->exists($perusahaan->logo_belum_lunas)) {
+                Storage::disk('public')->delete($perusahaan->logo_belum_lunas);
+            }
+            $validatedData['logo_belum_lunas'] = $request->file('logo_belum_lunas')->store('uploads/perusahaan', 'public');
+        }
+
+        // Proses upload dan hapus file lama untuk qr_code
+        if ($request->hasFile('qr_code')) {
+            if ($perusahaan->qr_code && Storage::disk('public')->exists($perusahaan->qr_code)) {
+                Storage::disk('public')->delete($perusahaan->qr_code);
+            }
+            $validatedData['qr_code'] = $request->file('qr_code')->store('uploads/perusahaan', 'public');
+        }
+
+        // Proses upload dan hapus file lama untuk id_card_desain
+        if ($request->hasFile('id_card_desain')) {
+            if ($perusahaan->id_card_desain && Storage::disk('public')->exists($perusahaan->id_card_desain)) {
+                Storage::disk('public')->delete($perusahaan->id_card_desain);
+            }
+            $validatedData['id_card_desain'] = $request->file('id_card_desain')->store('uploads/perusahaan', 'public');
+        }
+
+        // Simpan atau perbarui data perusahaan
+        $perusahaan->fill($validatedData);
         $perusahaan->save();
 
-        return redirect()->route('perusahaan.show')->with('success', 'Data perusahaan berhasil disimpan!');
+        return redirect()->route('perusahaan.edit')->with('success', 'Data perusahaan berhasil diperbarui!');
     }
 
-    /**
-     * Menghapus data perusahaan.
-     * Metode ini akan dipanggil oleh rute DELETE /perusahaan (perusahaan.destroy)
-     *
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function destroy()
-    {
-        $perusahaan = Perusahaan::first(); // Ambil satu-satunya record perusahaan
-
-        if ($perusahaan) {
-            // Hapus semua file terkait sebelum menghapus record dari database
-            $filesToDelete = [
-                $perusahaan->logo,
-                $perusahaan->favicon,
-                $perusahaan->logo_login,
-                $perusahaan->logo_lunas,
-                $perusahaan->logo_belum_lunas,
-                $perusahaan->qr_code,
-                $perusahaan->id_card_desain,
-            ];
-
-            foreach ($filesToDelete as $file) {
-                if ($file && Storage::disk('public')->exists($file)) {
-                    Storage::disk('public')->delete($file);
-                }
-            }
-            $perusahaan->delete(); // Hapus record dari database
-            return redirect()->route('perusahaan.show')->with('success', 'Data perusahaan berhasil dihapus!');
-        }
-        return redirect()->route('perusahaan.show')->with('error', 'Data perusahaan tidak ditemukan.');
-    }
+    // Metode destroy dihapus sesuai permintaan
 }

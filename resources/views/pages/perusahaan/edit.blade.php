@@ -21,28 +21,15 @@
             <div class="card-header">
                 {{-- Judul dinamis berdasarkan apakah data sudah ada atau belum --}}
                 <h5 class="card-title">{{ $perusahaan->exists ? 'Form Edit Data Perusahaan' : 'Form Tambah Data Perusahaan' }}</h5>
+                <div class="card-tools">
+                    <button type="submit" form="perusahaan-form" class="btn btn-primary btn-sm">Simpan Perubahan</button>
+                    {{-- Tombol Hapus dihapus sesuai permintaan 'jangan ada destroy' --}}
+                </div>
             </div>
             <div class="card-body">
-                @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('success') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                @endif
-
-                @if(session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        {{ session('error') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                @endif
-
+                @include('components.alert')
                 {{-- Form action selalu mengarah ke route update untuk singleton resource --}}
-                <form action="{{ route('perusahaan.update') }}" method="POST" enctype="multipart/form-data">
+                <form id="perusahaan-form" action="{{ route('perusahaan.update') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     @method('PUT') {{-- Selalu gunakan PUT untuk singleton update --}}
 
@@ -61,12 +48,17 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="email">Email</label>
-                                <input type="email" name="email" id="email"
-                                    class="form-control @error('email') is-invalid @enderror"
-                                    value="{{ old('email', $perusahaan->email) }}" required>
-                                @error('email')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                    </div>
+                                    <input type="email" name="email" id="email"
+                                        class="form-control @error('email') is-invalid @enderror"
+                                        value="{{ old('email', $perusahaan->email) }}" required>
+                                    @error('email')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -75,12 +67,17 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="instagram">Instagram</label>
-                                <input type="text" name="instagram" id="instagram"
-                                    class="form-control @error('instagram') is-invalid @enderror"
-                                    value="{{ old('instagram', $perusahaan->instagram) }}">
-                                @error('instagram')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fab fa-instagram"></i></span>
+                                    </div>
+                                    <input type="text" name="instagram" id="instagram"
+                                        class="form-control @error('instagram') is-invalid @enderror"
+                                        value="{{ old('instagram', $perusahaan->instagram) }}">
+                                    @error('instagram')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -303,15 +300,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <button type="submit" class="btn btn-primary mt-3">Simpan Perubahan</button>
-                    @if ($perusahaan->exists)
-                        <button type="button" class="btn btn-danger mt-3" onclick="confirmDelete()">Hapus Data Perusahaan</button>
-                    @endif
-                    {{-- <form id="delete-form" action="{{ route('perusahaan.destroy') }}" method="POST" style="display: none;">
-                        @csrf
-                        @method('DELETE')
-                    </form> --}}
                 </form>
             </div>
         </div>
@@ -320,25 +308,9 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> {{-- Pastikan SweetAlert2 terhubung --}}
+{{-- SweetAlert2 script sudah di-include di layouts/app, jadi tidak perlu lagi di sini --}}
 <script>
-    // Fungsi confirmDelete untuk SweetAlert2 (tidak perlu ID karena ini singleton)
-    function confirmDelete() {
-        Swal.fire({
-            title: 'Apakah Anda yakin?',
-            text: "Ini akan menghapus semua data perusahaan dan file terkait!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya, hapus!',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                document.getElementById('delete-form').submit();
-            }
-        });
-    }
+    // Fungsi confirmDelete dihapus sesuai permintaan
 
     // Fungsi untuk menampilkan preview gambar saat file dipilih
     function previewImage(input, previewId) {
@@ -354,7 +326,7 @@
             // Anda mungkin perlu menyimpan URL gambar lama di atribut data-old-src
             // atau menggunakan placeholder default jika tidak ada gambar lama
             const oldSrc = preview.dataset.oldSrc || `https://placehold.co/${preview.style.maxWidth.replace('px', '')}x${preview.style.maxHeight.replace('px', '')}/cccccc/333333?text=No+Image`;
-            preview.src = oldSrc; // Ini perlu disesuaikan jika placeholder berbeda per input
+            preview.src = oldSrc; // Kembalikan ke src lama atau placeholder
         }
 
         // Update label custom file input
@@ -381,10 +353,18 @@
             });
 
             // Inisialisasi label jika ada file yang sudah dipilih (misal dari old input)
-            const fileName = this.files[0] ? this.files[0].name : 'Pilih file...';
-            const customFileLabel = this.nextElementSibling;
+            // Ini harus dilakukan setelah `previewImage` dipanggil untuk memastikan `dataset.oldSrc` terisi
+            const customFileLabel = input.nextElementSibling;
             if (customFileLabel && customFileLabel.classList.contains('custom-file-label')) {
-                customFileLabel.innerText = fileName;
+                // Cek apakah ada file yang sudah ada dari server (jika sedang edit)
+                const currentFileName = input.dataset.currentFileName; // Anda bisa menambahkan data-current-file-name di input jika ingin menampilkan nama file yang sudah ada
+                if (input.files[0]) {
+                    customFileLabel.innerText = input.files[0].name;
+                } else if (currentFileName) {
+                    customFileLabel.innerText = currentFileName;
+                } else {
+                    customFileLabel.innerText = 'Pilih file...';
+                }
             }
         });
     });
