@@ -16,6 +16,7 @@ use App\Http\Controllers\SatuanController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\PelangganController;
 use App\Http\Controllers\OmsetPenjualanController;
+use App\Http\Controllers\ProfileController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -56,5 +57,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('transaksi/{id}/print-invoice', [TransaksiController::class, 'printInvoice'])->name('transaksi.print-invoice');
         Route::get('transaksi/export-excel', [TransaksiController::class, 'exportExcel'])->name('transaksi.export-excel');
         Route::resource('transaksi', TransaksiController::class);
+
+        Route::prefix('profile')->name('profile.')->group(function () {
+            Route::get('/', [ProfileController::class, 'show'])->name('show');
+            Route::put('/update-profile', [ProfileController::class, 'updateProfile'])->name('update-profile');
+            Route::post('/update-photo', [ProfileController::class, 'updatePhoto'])->name('update-photo');
+            Route::put('/change-password', [ProfileController::class, 'changePassword'])->name('change-password');
+        });
     });
 });
