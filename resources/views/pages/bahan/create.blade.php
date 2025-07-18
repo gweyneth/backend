@@ -1,9 +1,9 @@
-@extends('layouts.app') {{-- Pastikan ini mengarah ke layout utama Anda --}}
+@extends('layouts.app')
 
 @section('content_header')
 <div class="row mb-2">
     <div class="col-sm-6">
-        <h1 class="m-0">Tambah Bahan</h1>
+        <h1 class="m-0"><i class="fas fa-plus-circle mr-2"></i>Tambah Bahan Baru</h1>
     </div>
     <div class="col-sm-6">
         <ol class="breadcrumb float-sm-right">
@@ -18,52 +18,54 @@
 @section('content')
 <div class="row">
     <div class="col-md-12">
-        <div class="card">
+        <div class="card card-primary card-outline">
             <div class="card-header">
-                <h3 class="card-title">Form Tambah Bahan</h3>
+                <h3 class="card-title">
+                    <i class="fas fa-pencil-alt mr-2"></i>Form Tambah Bahan
+                </h3>
             </div>
             <form action="{{ route('bahan.store') }}" method="POST">
-                @csrf {{-- Token CSRF wajib untuk keamanan Laravel --}}
+                @csrf
                 <div class="card-body">
                     <div class="form-group">
-                        <label for="nama">Nama Bahan</label>
-                        <input type="text"
-                               class="form-control @error('nama') is-invalid @enderror"
-                               id="nama"
-                               name="nama"
-                               value="{{ old('nama') }}"
-                               placeholder="Masukkan nama bahan"
-                               required>
-                        @error('nama')
-                            <div class="invalid-feedback">
-                                {{ $message }}
+                        <label for="nama">Nama Bahan <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-box"></i></span>
                             </div>
-                        @enderror
+                            <input type="text"
+                                   class="form-control @error('nama') is-invalid @enderror"
+                                   id="nama"
+                                   name="nama"
+                                   value="{{ old('nama') }}"
+                                   placeholder="Masukkan nama bahan"
+                                   required>
+                            @error('nama')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="kategori_id">Kategori</label>
+                        <label for="kategori_id">Kategori <span class="text-danger">*</span></label>
                         <select class="form-control @error('kategori_id') is-invalid @enderror"
                                 id="kategori_id"
                                 name="kategori_id"
                                 required>
                             <option value="">-- Pilih Kategori --</option>
                             @foreach($kategoriBarangs as $kategori)
-                                {{-- Pastikan nama kolom untuk kategori adalah 'nama' --}}
                                 <option value="{{ $kategori->id }}" {{ old('kategori_id') == $kategori->id ? 'selected' : '' }}>
                                     {{ $kategori->nama }}
                                 </option>
                             @endforeach
                         </select>
                         @error('kategori_id')
-                            <div class="invalid-feedback">
-                                {{ $message }}
-                            </div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
                     <div class="form-group">
-                        <label for="stok">Stok</label>
+                        <label for="stok">Stok <span class="text-danger">*</span></label>
                         <select class="form-control @error('stok') is-invalid @enderror"
                                 id="stok"
                                 name="stok"
@@ -73,14 +75,12 @@
                             <option value="Kosong" {{ old('stok') === 'Kosong' ? 'selected' : '' }}>Kosong</option>
                         </select>
                         @error('stok')
-                            <div class="invalid-feedback">
-                                {{ $message }}
-                            </div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
                     <div class="form-group">
-                        <label for="status">Status</label>
+                        <label for="status">Status <span class="text-danger">*</span></label>
                         <select class="form-control @error('status') is-invalid @enderror"
                                 id="status"
                                 name="status"
@@ -90,19 +90,16 @@
                             <option value="Non Aktif" {{ old('status') === 'Non Aktif' ? 'selected' : '' }}>Non Aktif</option>
                         </select>
                         @error('status')
-                            <div class="invalid-feedback">
-                                {{ $message }}
-                            </div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
-
                 </div>
-                <div class="card-footer">
-                    <button type="submit" class="btn btn-primary">Simpan</button>
+                <div class="card-footer text-right">
                     <a href="{{ route('bahan.index') }}" class="btn btn-secondary">Batal</a>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> Simpan</button>
                 </div>
             </form>
         </div>
-        </div>
+    </div>
 </div>
 @endsection

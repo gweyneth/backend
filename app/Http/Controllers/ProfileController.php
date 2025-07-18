@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Storage;
-use App\Models\User; // Pastikan model User sudah di-import
+use App\Models\User; 
 
 class ProfileController extends Controller
 {

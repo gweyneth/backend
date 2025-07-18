@@ -212,8 +212,8 @@
                                 <label class="form-check-label" for="metode_transfer">Transfer Bank</label>
                             </div>
                             <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="metode_pembayaran" id="metode_transfer" value="transfer_bank">
-                                <label class="form-check-label" for="metode_transfer">Qris</label>
+                                <input class="form-check-input" type="radio" name="metode_pembayaran" id="metode_qris" value="qris">
+                                <label class="form-check-label" for="metode_qris">QRIS</label>
                             </div>
                         </div>
                     </div>
@@ -223,6 +223,7 @@
                             <label for="rekening_id">Pilih Bank</label>
                             <select name="rekening_id" id="rekening_id" class="form-control @error('rekening_id') is-invalid @enderror">
                                 <option value="">Pilih Rekening Bank</option>
+                                {{-- Pastikan variabel $rekening tersedia dari controller --}}
                                 @foreach($rekening as $rek)
                                     <option value="{{ $rek->id }}">
                                         {{ $rek->bank }} - {{ $rek->nomor_rekening }} ({{ $rek->atas_nama }})
@@ -239,6 +240,20 @@
                             @error('bukti_pembayaran')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
+                        </div>
+                    </div>
+
+                    <div id="qris_fields" style="display: none;">
+                        <div class="form-group text-center">
+                            <label>Scan QRIS untuk Pembayaran</label>
+                            <img id="qrisImage"
+                                 src="{{ $perusahaan->qr_code ? asset('storage/' . $perusahaan->qr_code) : 'https://placehold.co/200x200/cccccc/333333?text=QRIS+Not+Available' }}"
+                                 alt="QRIS Code"
+                                 class="img-fluid"
+                                 style="max-width: 200px; margin: 0 auto; display: none;"> 
+                            <small id="qrisStatusMessage" class="form-text text-muted mt-2" style="display: none;">
+                                Pastikan Anda telah mengunggah QRIS di pengaturan perusahaan.
+                            </small>
                         </div>
                     </div>
 
@@ -281,44 +296,85 @@
         document.getElementById('modal_diskon_transaksi').value = formatRupiah(parseFloat(diskonTransaksi));
         document.getElementById('modal_total_harus_dibayar').value = formatRupiah(parseFloat(totalTransaksi));
 
-        document.getElementById('metode_tunai').checked = true; // Default ke Tunai
-        document.getElementById('transfer_fields').style.display = 'none'; // Sembunyikan field transfer
-        document.getElementById('formPelunasan').action = `/transaksi/${transaksiId}/pelunasan`; // Sesuaikan URL aksi
+        // Set default ke Tunai dan panggil togglePaymentFields untuk inisialisasi tampilan
+        document.getElementById('metode_tunai').checked = true;
+        togglePaymentFields(); // Panggil fungsi baru untuk mengatur tampilan awal
 
-        // Panggil toggleTransferFields untuk memastikan status awal yang benar
-        toggleTransferFields();
+        document.getElementById('formPelunasan').action = `/transaksi/${transaksiId}/pelunasan`; // Sesuaikan URL aksi
 
         $('#pelunasanModal').modal('show');
     }
 
     // Event listener untuk perubahan metode pembayaran
-    // Dideklarasikan di luar fungsi showPelunasanModal agar hanya diinisialisasi sekali
-    const metodeTunaiRadio = document.getElementById('metode_tunai');
-    const metodeTransferRadio = document.getElementById('metode_transfer');
+    const metodePembayaranRadios = document.querySelectorAll('input[name="metode_pembayaran"]');
     const transferFieldsDiv = document.getElementById('transfer_fields');
+    const qrisFieldsDiv = document.getElementById('qris_fields');
     const buktiPembayaranInput = document.getElementById('bukti_pembayaran');
     const rekeningIdSelect = document.getElementById('rekening_id');
+    const qrisImage = document.getElementById('qrisImage'); // Dapatkan elemen gambar QRIS
+    const qrisStatusMessage = document.getElementById('qrisStatusMessage'); // Dapatkan elemen pesan status QRIS
 
-    function toggleTransferFields() {
-        if (metodeTransferRadio.checked) {
+    function togglePaymentFields() {
+        const selectedMethod = document.querySelector('input[name="metode_pembayaran"]:checked').value;
+
+        // Reset display for all fields
+        transferFieldsDiv.style.display = 'none';
+        qrisFieldsDiv.style.display = 'none';
+
+        // Remove required attributes from all fields
+        buktiPembayaranInput.removeAttribute('required');
+        rekeningIdSelect.removeAttribute('required');
+
+        if (selectedMethod === 'transfer_bank') {
             transferFieldsDiv.style.display = 'block';
-            // Tambahkan atribut 'required' jika diperlukan
             buktiPembayaranInput.setAttribute('required', 'required');
             rekeningIdSelect.setAttribute('required', 'required');
-        } else {
-            transferFieldsDiv.style.display = 'none';
-            // Hapus atribut 'required'
-            buktiPembayaranInput.removeAttribute('required');
-            rekeningIdSelect.removeAttribute('required');
+        } else if (selectedMethod === 'qris') {
+            qrisFieldsDiv.style.display = 'block';
+
+            // Logika untuk menampilkan atau menyembunyikan gambar/pesan QRIS
+            // Dapatkan URL QRIS dari atribut src gambar
+            const currentQrisSrc = qrisImage.src;
+
+            // Cek apakah URL QRIS adalah placeholder atau URL yang valid
+            if (currentQrisSrc.includes('placehold.co') || !currentQrisSrc) {
+                // Jika placeholder atau kosong, sembunyikan gambar dan tampilkan pesan
+                qrisImage.style.display = 'none';
+                qrisStatusMessage.style.display = 'block';
+            } else {
+                // Jika ada URL yang valid, coba muat gambar
+                // Gunakan objek Image untuk memuat gambar secara terpisah
+                const img = new Image();
+                img.src = currentQrisSrc;
+
+                img.onload = () => {
+                    // Jika berhasil dimuat, tampilkan gambar dan sembunyikan pesan
+                    qrisImage.style.display = 'block';
+                    qrisStatusMessage.style.display = 'none';
+                };
+
+                img.onerror = () => {
+                    // Jika gagal dimuat, sembunyikan gambar dan tampilkan pesan
+                    qrisImage.style.display = 'none';
+                    qrisStatusMessage.style.display = 'block';
+                };
+            }
         }
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        metodeTunaiRadio.addEventListener('change', toggleTransferFields);
-        metodeTransferRadio.addEventListener('change', toggleTransferFields);
+        metodePembayaranRadios.forEach(radio => {
+            radio.addEventListener('change', togglePaymentFields);
+        });
 
         // Panggil saat halaman dimuat untuk memastikan tampilan awal yang benar
-        toggleTransferFields();
+        togglePaymentFields();
+
+        // Optional: Tambahkan event listener untuk saat modal ditampilkan
+        $('#pelunasanModal').on('show.bs.modal', function (event) {
+            // Reset tampilan field setiap kali modal dibuka
+            togglePaymentFields();
+        });
     });
 
     function confirmDelete(id) {

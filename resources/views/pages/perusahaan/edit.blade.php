@@ -1,372 +1,207 @@
 @extends('layouts.app')
 
+@push('styles')
+<style>
+    /* Styling untuk area upload gambar yang lebih baik */
+    .image-upload-container {
+        border: 2px dashed #ced4da;
+        border-radius: .25rem;
+        padding: 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+        position: relative;
+        height: 220px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: #f8f9fa;
+        overflow: hidden;
+    }
+    .image-upload-container:hover {
+        border-color: #007bff;
+        background-color: #e9ecef;
+    }
+    .upload-prompt .upload-icon {
+        font-size: 2.5rem;
+        color: #6c757d;
+    }
+    .upload-prompt .upload-text {
+        margin-top: 0.5rem;
+        color: #6c757d;
+    }
+    .image-upload-container input[type="file"] {
+        display: none;
+    }
+    .image-preview {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+    .card-tabs .nav-tabs .nav-link.active {
+        background-color: #fff;
+        border-bottom: 3px solid #007bff;
+        color: #007bff;
+        font-weight: 600;
+    }
+    .card-tabs .nav-tabs .nav-link {
+        border-bottom: 3px solid transparent;
+    }
+</style>
+@endpush
+
 @section('content_header')
 <div class="row mb-2">
     <div class="col-sm-6">
-        <h1 class="m-0">Data Perusahaan</h1>
+        <h1 class="m-0"><i class="far fa-building mr-2"></i>Pengaturan Perusahaan</h1>
     </div>
     <div class="col-sm-6">
         <ol class="breadcrumb float-sm-right">
             <li class="breadcrumb-item"><a href="{{ url('/dashboard') }}">Dashboard</a></li>
-            <li class="breadcrumb-item active">Data Perusahaan</li>
+            <li class="breadcrumb-item active">Pengaturan Perusahaan</li>
         </ol>
     </div>
 </div>
 @endsection
 
 @section('content')
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                {{-- Judul dinamis berdasarkan apakah data sudah ada atau belum --}}
-                <h5 class="card-title">{{ $perusahaan->exists ? 'Form Edit Data Perusahaan' : 'Form Tambah Data Perusahaan' }}</h5>
-                <div class="card-tools">
-                    <button type="submit" form="perusahaan-form" class="btn btn-primary btn-sm">Simpan Perubahan</button>
-                    {{-- Tombol Hapus dihapus sesuai permintaan 'jangan ada destroy' --}}
+<form id="perusahaan-form" action="{{ route('perusahaan.update') }}" method="POST" enctype="multipart/form-data">
+    @csrf
+    @method('PUT')
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-tabs">
+                <div class="card-header p-0 pt-1 border-bottom-0">
+                    <ul class="nav nav-tabs" id="custom-tabs-one-tab" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="tab-info-umum-tab" data-toggle="pill" href="#tab-info-umum" role="tab" aria-controls="tab-info-umum" aria-selected="true">
+                                <i class="fas fa-info-circle mr-2"></i>Informasi Umum
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="tab-media-branding-tab" data-toggle="pill" href="#tab-media-branding" role="tab" aria-controls="tab-media-branding" aria-selected="false">
+                                <i class="fas fa-image mr-2"></i>Media & Branding
+                            </a>
+                        </li>
+                    </ul>
                 </div>
-            </div>
-            <div class="card-body">
-                @include('components.alert')
-                {{-- Form action selalu mengarah ke route update untuk singleton resource --}}
-                <form id="perusahaan-form" action="{{ route('perusahaan.update') }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    @method('PUT') {{-- Selalu gunakan PUT untuk singleton update --}}
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="nama_perusahaan">Nama Perusahaan</label>
-                                <input type="text" name="nama_perusahaan" id="nama_perusahaan"
-                                    class="form-control @error('nama_perusahaan') is-invalid @enderror"
-                                    value="{{ old('nama_perusahaan', $perusahaan->nama_perusahaan) }}" required>
-                                @error('nama_perusahaan')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="email">Email</label>
-                                <div class="input-group">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                <div class="card-body">
+                    <div class="tab-content" id="custom-tabs-one-tabContent">
+                        {{-- Tab 1: Informasi Umum --}}
+                        <div class="tab-pane fade show active" id="tab-info-umum" role="tabpanel" aria-labelledby="tab-info-umum-tab">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="nama_perusahaan">Nama Perusahaan <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-building"></i></span></div>
+                                            <input type="text" name="nama_perusahaan" id="nama_perusahaan" class="form-control @error('nama_perusahaan') is-invalid @enderror" value="{{ old('nama_perusahaan', $perusahaan->nama_perusahaan) }}" placeholder="Contoh: PT. Maju Jaya" required>
+                                            @error('nama_perusahaan')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                        </div>
                                     </div>
-                                    <input type="email" name="email" id="email"
-                                        class="form-control @error('email') is-invalid @enderror"
-                                        value="{{ old('email', $perusahaan->email) }}" required>
-                                    @error('email')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="instagram">Instagram</label>
-                                <div class="input-group">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><i class="fab fa-instagram"></i></span>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="email">Email <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-envelope"></i></span></div>
+                                            <input type="email" name="email" id="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email', $perusahaan->email) }}" placeholder="contoh@perusahaan.com" required>
+                                            @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                        </div>
                                     </div>
-                                    <input type="text" name="instagram" id="instagram"
-                                        class="form-control @error('instagram') is-invalid @enderror"
-                                        value="{{ old('instagram', $perusahaan->instagram) }}">
-                                    @error('instagram')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="no_handphone">No. Handphone</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-phone"></i></span></div>
+                                            <input type="text" name="no_handphone" id="no_handphone" class="form-control @error('no_handphone') is-invalid @enderror" value="{{ old('no_handphone', $perusahaan->no_handphone) }}" placeholder="081234567890">
+                                            @error('no_handphone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="instagram">Instagram</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend"><span class="input-group-text"><i class="fab fa-instagram"></i></span></div>
+                                            <input type="text" name="instagram" id="instagram" class="form-control @error('instagram') is-invalid @enderror" value="{{ old('instagram', $perusahaan->instagram) }}" placeholder="Username Instagram tanpa '@'">
+                                            @error('instagram')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="alamat">Alamat</label>
+                                        <textarea name="alamat" id="alamat" class="form-control @error('alamat') is-invalid @enderror" rows="3" placeholder="Masukkan alamat lengkap perusahaan">{{ old('alamat', $perusahaan->alamat) }}</textarea>
+                                        @error('alamat')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="alamat_tanggal">Alamat Tanggal (Kota/Lokasi)</label>
-                                <input type="text" name="alamat_tanggal" id="alamat_tanggal"
-                                    class="form-control @error('alamat_tanggal') is-invalid @enderror"
-                                    value="{{ old('alamat_tanggal', $perusahaan->alamat_tanggal) }}">
-                                @error('alamat_tanggal')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="no_handphone">No. Handphone</label>
-                                <input type="text" name="no_handphone" id="no_handphone"
-                                    class="form-control @error('no_handphone') is-invalid @enderror"
-                                    value="{{ old('no_handphone', $perusahaan->no_handphone) }}">
-                                @error('no_handphone')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="alamat">Alamat</label>
-                                <textarea name="alamat" id="alamat" class="form-control @error('alamat') is-invalid @enderror" rows="3">{{ old('alamat', $perusahaan->alamat) }}</textarea>
-                                @error('alamat')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
+                        {{-- Tab 2: Media & Branding --}}
+                        <div class="tab-pane fade" id="tab-media-branding" role="tabpanel" aria-labelledby="tab-media-branding-tab">
+                            <div class="row">
+                                @php
+                                    $imageFields = [
+                                        'logo' => ['label' => 'Logo Perusahaan', 'rekomendasi' => '1200x700 px'],
+                                        'favicon' => ['label' => 'Favicon', 'rekomendasi' => '72x72 px'],
+                                        'logo_login' => ['label' => 'Logo Halaman Login', 'rekomendasi' => '1200x700 px'],
+                                        'logo_lunas' => ['label' => 'Logo Stempel Lunas', 'rekomendasi' => '500x300 px'],
+                                        'logo_belum_lunas' => ['label' => 'Logo Stempel Belum Lunas', 'rekomendasi' => '500x300 px'],
+                                        'qr_code' => ['label' => 'QR Code', 'rekomendasi' => '700x700 px'],
+                                        'id_card_desain' => ['label' => 'Desain ID Card', 'rekomendasi' => 'Ukuran bebas'],
+                                    ];
+                                @endphp
 
-                    <hr>
-                    <h5>Pengaturan Logo & QR Code</h5>
-
-                    {{-- Logo Perusahaan --}}
-                    <div class="row mb-3 align-items-center">
-                        <div class="col-md-6">
-                            <div class="form-group mb-0">
-                                <label for="logo">Logo Perusahaan</label>
-                                <div class="custom-file">
-                                    <input type="file" name="logo" id="logo" class="custom-file-input @error('logo') is-invalid @enderror" onchange="previewImage(this, 'logo-preview')">
-                                    <label class="custom-file-label" for="logo">Pilih file logo...</label>
+                                @foreach ($imageFields as $field => $details)
+                                <div class="col-md-4 mb-4">
+                                    <label>{{ $details['label'] }}</label>
+                                    <label for="{{ $field }}" class="image-upload-container">
+                                        <input type="file" name="{{ $field }}" id="{{ $field }}" class="@error($field) is-invalid @enderror" onchange="previewImage(this, '{{ $field }}-preview', '{{ $field }}-prompt')">
+                                        
+                                        <div id="{{ $field }}-prompt" class="upload-prompt {{ $perusahaan->{$field} ? 'd-none' : '' }}">
+                                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                            <p class="upload-text">Klik untuk memilih gambar</p>
+                                        </div>
+                                        
+                                        <img id="{{ $field }}-preview" src="{{ $perusahaan->{$field} ? asset('storage/' . $perusahaan->{$field}) : '' }}" class="image-preview {{ $perusahaan->{$field} ? '' : 'd-none' }}">
+                                    </label>
+                                    <small class="form-text text-muted">Rekomendasi: {{ $details['rekomendasi'] }}, Maks 5MB.</small>
+                                    @error($field)<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                                 </div>
-                                @error('logo')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
-                                <small class="form-text text-muted">Max 2MB (1200x700 px)</small>
-                            </div>
-                        </div>
-                        <div class="col-md-6 text-center">
-                            <div class="image-preview-container">
-                                @if ($perusahaan->logo)
-                                    <img id="logo-preview" src="{{ asset('storage/' . $perusahaan->logo) }}" alt="Logo Perusahaan" class="img-thumbnail" style="max-width: 150px; max-height: 100px; object-fit: contain;">
-                                @else
-                                    <img id="logo-preview" src="https://placehold.co/150x100/cccccc/333333?text=No+Logo" alt="No Logo" class="img-thumbnail" style="max-width: 150px; max-height: 100px; object-fit: contain;">
-                                @endif
+                                @endforeach
                             </div>
                         </div>
                     </div>
-
-                    {{-- Favicon --}}
-                    <div class="row mb-3 align-items-center">
-                        <div class="col-md-6">
-                            <div class="form-group mb-0">
-                                <label for="favicon">Favicon</label>
-                                <div class="custom-file">
-                                    <input type="file" name="favicon" id="favicon" class="custom-file-input @error('favicon') is-invalid @enderror" onchange="previewImage(this, 'favicon-preview')">
-                                    <label class="custom-file-label" for="favicon">Pilih file favicon...</label>
-                                </div>
-                                @error('favicon')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
-                                <small class="form-text text-muted">Max 2MB (72x72 px)</small>
-                            </div>
-                        </div>
-                        <div class="col-md-6 text-center">
-                            <div class="image-preview-container">
-                                @if ($perusahaan->favicon)
-                                    <img id="favicon-preview" src="{{ asset('storage/' . $perusahaan->favicon) }}" alt="Favicon" class="img-thumbnail" style="max-width: 50px; max-height: 50px; object-fit: contain;">
-                                @else
-                                    <img id="favicon-preview" src="https://placehold.co/50x50/cccccc/333333?text=No+Favicon" alt="No Favicon" class="img-thumbnail" style="max-width: 50px; max-height: 50px; object-fit: contain;">
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Logo Login --}}
-                    <div class="row mb-3 align-items-center">
-                        <div class="col-md-6">
-                            <div class="form-group mb-0">
-                                <label for="logo_login">Logo Login</label>
-                                <div class="custom-file">
-                                    <input type="file" name="logo_login" id="logo_login" class="custom-file-input @error('logo_login') is-invalid @enderror" onchange="previewImage(this, 'logo_login-preview')">
-                                    <label class="custom-file-label" for="logo_login">Pilih file logo login...</label>
-                                </div>
-                                @error('logo_login')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
-                                <small class="form-text text-muted">Max 2MB (1200x700 px)</small>
-                            </div>
-                        </div>
-                        <div class="col-md-6 text-center">
-                            <div class="image-preview-container">
-                                @if ($perusahaan->logo_login)
-                                    <img id="logo_login-preview" src="{{ asset('storage/' . $perusahaan->logo_login) }}" alt="Logo Login" class="img-thumbnail" style="max-width: 150px; max-height: 100px; object-fit: contain;">
-                                @else
-                                    <img id="logo_login-preview" src="https://placehold.co/150x100/cccccc/333333?text=No+Login+Logo" alt="No Login Logo" class="img-thumbnail" style="max-width: 150px; max-height: 100px; object-fit: contain;">
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Logo Lunas --}}
-                    <div class="row mb-3 align-items-center">
-                        <div class="col-md-6">
-                            <div class="form-group mb-0">
-                                <label for="logo_lunas">Logo Lunas</label>
-                                <div class="custom-file">
-                                    <input type="file" name="logo_lunas" id="logo_lunas" class="custom-file-input @error('logo_lunas') is-invalid @enderror" onchange="previewImage(this, 'logo_lunas-preview')">
-                                    <label class="custom-file-label" for="logo_lunas">Pilih file logo lunas...</label>
-                                </div>
-                                @error('logo_lunas')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
-                                <small class="form-text text-muted">Max 2MB (500x300 px)</small>
-                            </div>
-                        </div>
-                        <div class="col-md-6 text-center">
-                            <div class="image-preview-container">
-                                @if ($perusahaan->logo_lunas)
-                                    <img id="logo_lunas-preview" src="{{ asset('storage/' . $perusahaan->logo_lunas) }}" alt="Logo Lunas" class="img-thumbnail" style="max-width: 150px; max-height: 100px; object-fit: contain;">
-                                @else
-                                    <img id="logo_lunas-preview" src="https://placehold.co/150x100/cccccc/333333?text=No+Lunas+Logo" alt="No Lunas Logo" class="img-thumbnail" style="max-width: 150px; max-height: 100px; object-fit: contain;">
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Logo Belum Lunas --}}
-                    <div class="row mb-3 align-items-center">
-                        <div class="col-md-6">
-                            <div class="form-group mb-0">
-                                <label for="logo_belum_lunas">Logo Belum Lunas</label>
-                                <div class="custom-file">
-                                    <input type="file" name="logo_belum_lunas" id="logo_belum_lunas" class="custom-file-input @error('logo_belum_lunas') is-invalid @enderror" onchange="previewImage(this, 'logo_belum_lunas-preview')">
-                                    <label class="custom-file-label" for="logo_belum_lunas">Pilih file logo belum lunas...</label>
-                                </div>
-                                @error('logo_belum_lunas')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
-                                <small class="form-text text-muted">Max 2MB (500x300 px)</small>
-                            </div>
-                        </div>
-                        <div class="col-md-6 text-center">
-                            <div class="image-preview-container">
-                                @if ($perusahaan->logo_belum_lunas)
-                                    <img id="logo_belum_lunas-preview" src="{{ asset('storage/' . $perusahaan->logo_belum_lunas) }}" alt="Logo Belum Lunas" class="img-thumbnail" style="max-width: 150px; max-height: 100px; object-fit: contain;">
-                                @else
-                                    <img id="logo_belum_lunas-preview" src="https://placehold.co/150x100/cccccc/333333?text=No+Blm+Lunas+Logo" alt="No Belum Lunas Logo" class="img-thumbnail" style="max-width: 150px; max-height: 100px; object-fit: contain;">
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- QR Code --}}
-                    <div class="row mb-3 align-items-center">
-                        <div class="col-md-6">
-                            <div class="form-group mb-0">
-                                <label for="qr_code">QR Code</label>
-                                <div class="custom-file">
-                                    <input type="file" name="qr_code" id="qr_code" class="custom-file-input @error('qr_code') is-invalid @enderror" onchange="previewImage(this, 'qr_code-preview')">
-                                    <label class="custom-file-label" for="qr_code">Pilih file QR Code...</label>
-                                </div>
-                                @error('qr_code')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
-                                <small class="form-text text-muted">Max 2MB (700x700 px)</small>
-                            </div>
-                        </div>
-                        <div class="col-md-6 text-center">
-                            <div class="image-preview-container">
-                                @if ($perusahaan->qr_code)
-                                    <img id="qr_code-preview" src="{{ asset('storage/' . $perusahaan->qr_code) }}" alt="QR Code" class="img-thumbnail" style="max-width: 150px; max-height: 150px; object-fit: contain;">
-                                @else
-                                    <img id="qr_code-preview" src="https://placehold.co/150x150/cccccc/333333?text=No+QR+Code" alt="No QR Code" class="img-thumbnail" style="max-width: 150px; max-height: 150px; object-fit: contain;">
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- ID Card Desain --}}
-                    <div class="row mb-3 align-items-center">
-                        <div class="col-md-6">
-                            <div class="form-group mb-0">
-                                <label for="id_card_desain">ID Card Desain</label>
-                                <div class="custom-file">
-                                    <input type="file" name="id_card_desain" id="id_card_desain" class="custom-file-input @error('id_card_desain') is-invalid @enderror" onchange="previewImage(this, 'id_card_desain-preview')">
-                                    <label class="custom-file-label" for="id_card_desain">Pilih file desain ID Card...</label>
-                                </div>
-                                @error('id_card_desain')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
-                                <small class="form-text text-muted">Max 2MB</small>
-                            </div>
-                        </div>
-                        <div class="col-md-6 text-center">
-                            <div class="image-preview-container">
-                                @if ($perusahaan->id_card_desain)
-                                    <img id="id_card_desain-preview" src="{{ asset('storage/' . $perusahaan->id_card_desain) }}" alt="ID Card Desain" class="img-thumbnail" style="max-width: 150px; max-height: 100px; object-fit: contain;">
-                                @else
-                                    <img id="id_card_desain-preview" src="https://placehold.co/150x100/cccccc/333333?text=No+ID+Card+Design" alt="No ID Card Design" class="img-thumbnail" style="max-width: 150px; max-height: 100px; object-fit: contain;">
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                </form>
+                </div>
+                <div class="card-footer text-right">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> Simpan Perubahan</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
+</form>
 @endsection
 
 @push('scripts')
-{{-- SweetAlert2 script sudah di-include di layouts/app, jadi tidak perlu lagi di sini --}}
 <script>
-    // Fungsi confirmDelete dihapus sesuai permintaan
-
-    // Fungsi untuk menampilkan preview gambar saat file dipilih
-    function previewImage(input, previewId) {
+    function previewImage(input, previewId, promptId) {
         const preview = document.getElementById(previewId);
+        const prompt = document.getElementById(promptId);
+
         if (input.files && input.files[0]) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 preview.src = e.target.result;
+                preview.classList.remove('d-none');
+                prompt.classList.add('d-none');
             };
             reader.readAsDataURL(input.files[0]);
-        } else {
-            // Jika tidak ada file dipilih, kembalikan ke placeholder atau gambar lama
-            // Anda mungkin perlu menyimpan URL gambar lama di atribut data-old-src
-            // atau menggunakan placeholder default jika tidak ada gambar lama
-            const oldSrc = preview.dataset.oldSrc || `https://placehold.co/${preview.style.maxWidth.replace('px', '')}x${preview.style.maxHeight.replace('px', '')}/cccccc/333333?text=No+Image`;
-            preview.src = oldSrc; // Kembalikan ke src lama atau placeholder
-        }
-
-        // Update label custom file input
-        const fileName = input.files[0] ? input.files[0].name : 'Pilih file...';
-        const customFileLabel = input.nextElementSibling;
-        if (customFileLabel && customFileLabel.classList.contains('custom-file-label')) {
-            customFileLabel.innerText = fileName;
         }
     }
-
-    // Memastikan label file input berubah saat file dipilih dan menyimpan oldSrc
-    document.addEventListener('DOMContentLoaded', function() {
-        const fileInputs = document.querySelectorAll('input[type="file"]');
-        fileInputs.forEach(input => {
-            const previewId = input.id + '-preview';
-            const previewElement = document.getElementById(previewId);
-            if (previewElement && previewElement.src) {
-                // Simpan src gambar lama ke atribut data-old-src
-                previewElement.dataset.oldSrc = previewElement.src;
-            }
-
-            input.addEventListener('change', function() {
-                previewImage(this, previewId);
-            });
-
-            // Inisialisasi label jika ada file yang sudah dipilih (misal dari old input)
-            // Ini harus dilakukan setelah `previewImage` dipanggil untuk memastikan `dataset.oldSrc` terisi
-            const customFileLabel = input.nextElementSibling;
-            if (customFileLabel && customFileLabel.classList.contains('custom-file-label')) {
-                // Cek apakah ada file yang sudah ada dari server (jika sedang edit)
-                const currentFileName = input.dataset.currentFileName; // Anda bisa menambahkan data-current-file-name di input jika ingin menampilkan nama file yang sudah ada
-                if (input.files[0]) {
-                    customFileLabel.innerText = input.files[0].name;
-                } else if (currentFileName) {
-                    customFileLabel.innerText = currentFileName;
-                } else {
-                    customFileLabel.innerText = 'Pilih file...';
-                }
-            }
-        });
-    });
 </script>
 @endpush

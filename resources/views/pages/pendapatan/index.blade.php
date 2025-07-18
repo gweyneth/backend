@@ -103,6 +103,7 @@
                                 <th>Bank (Jika Transfer)</th>
                                 <th>Lampiran (Bukti Bayar)</th>
                                 <th>Jumlah Uang Muka</th>
+                                <th>Total Bayar</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -123,6 +124,7 @@
                                     @endif
                                 </td>
                                 <td>Rp{{ number_format($item->uang_muka, 2, ',', '.') }}</td> {{-- Menampilkan uang muka sebagai jumlah yang dibayar --}}
+                                <td>Rp{{ number_format($item->total, 2, ',', '.') }}</td> {{-- Menampilkan uang muka sebagai jumlah yang dibayar --}}
                             </tr>
                             @empty
                             <tr>
@@ -132,7 +134,7 @@
                         </tbody>
                         <tfoot>
                             <tr>
-                                <th colspan="8" class="text-right">Total Keseluruhan Uang Muka (Pendapatan):</th>
+                                <th colspan="9" class="text-right">Total Keseluruhan Pendapatan:</th>
                                 <th>Rp{{ number_format($totalPendapatan, 2, ',', '.') }}</th>
                             </tr>
                         </tfoot>

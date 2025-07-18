@@ -1,9 +1,19 @@
 @extends('layouts.app')
 
+@push('styles')
+<style>
+    .profile-user-img {
+        width: 128px;
+        height: 128px;
+        object-fit: cover;
+    }
+</style>
+@endpush
+
 @section('content_header')
 <div class="row mb-2">
     <div class="col-sm-6">
-        <h1 class="m-0">Akun Saya</h1>
+        <h1 class="m-0"><i class="fas fa-user-circle mr-2"></i>Akun Saya</h1>
     </div>
     <div class="col-sm-6">
         <ol class="breadcrumb float-sm-right">
@@ -16,50 +26,102 @@
 
 @section('content')
 <div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">Informasi Akun</h5>
+    <div class="col-md-4">
+        {{-- Kartu Profil Pengguna --}}
+        <div class="card card-primary card-outline">
+            <div class="card-body box-profile">
+                <div class="text-center">
+                    <img class="profile-user-img img-fluid img-circle"
+                         src="{{ Auth::user()->photo ? asset('storage/' . Auth::user()->photo) : asset('dist/img/user2-160x160.jpg') }}"
+                         alt="Foto Profil Pengguna">
+                </div>
+                <h3 class="profile-username text-center mt-3">{{ $user->name }}</h3>
+                <p class="text-muted text-center">{{ $user->email }}</p>
+
+                <button type="button" class="btn btn-primary btn-block" data-toggle="modal" data-target="#updatePhotoModal">
+                    <b><i class="fas fa-camera mr-1"></i> Ubah Foto Profil</b>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card card-tabs">
+            <div class="card-header p-0 pt-1 border-bottom-0">
+                <ul class="nav nav-tabs" id="custom-tabs-four-tab" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="tab-profile-tab" data-toggle="pill" href="#tab-profile" role="tab" aria-controls="tab-profile" aria-selected="true">
+                            <i class="fas fa-user-edit mr-2"></i>Ubah Profil
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="tab-password-tab" data-toggle="pill" href="#tab-password" role="tab" aria-controls="tab-password" aria-selected="false">
+                            <i class="fas fa-key mr-2"></i>Ganti Password
+                        </a>
+                    </li>
+                </ul>
             </div>
             <div class="card-body">
-                @include('components.alert')
-                <div class="row">
-                    <div class="col-md-4 text-center">
-                        {{-- Foto profil --}}
-                        <img src="{{ Auth::user()->photo ? asset('storage/' . Auth::user()->photo) : asset('dist/img/user2-160x160.jpg') }}"
-                            alt="Foto Profil" class="img-fluid rounded-circle mb-3"
-                            style="width: 150px; height: 150px; object-fit: cover;">
-                        <h4>{{ $user->name }}</h4>
-                        <p class="text-muted">{{ $user->email }}</p>
-
-                        <hr>
-                        {{-- Tombol untuk membuka modal Ubah Foto Profil --}}
-                        <button type="button" class="btn btn-primary btn-sm mb-2" data-toggle="modal" data-target="#updatePhotoModal">
-                            <i class="fas fa-camera"></i> Ubah Foto Profil
-                        </button>
+                <div class="tab-content" id="custom-tabs-four-tabContent">
+                    {{-- Tab 1: Ubah Profil --}}
+                    <div class="tab-pane fade show active" id="tab-profile" role="tabpanel" aria-labelledby="tab-profile-tab">
+                        <form action="{{ route('profile.update-profile') }}" method="POST">
+                            @csrf
+                            @method('PUT')
+                            <div class="form-group">
+                                <label for="username">Username</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-user"></i></span></div>
+                                    <input type="text" name="username" id="username" class="form-control @error('username') is-invalid @enderror" value="{{ old('username', $user->username) }}" required>
+                                    @error('username')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-envelope"></i></span></div>
+                                    <input type="email" name="email" id="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email', $user->email) }}" required>
+                                    @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                            </div>
+                            <div class="form-group text-right">
+                                <button type="submit" class="btn btn-warning"><i class="fas fa-save mr-1"></i> Simpan Perubahan</button>
+                            </div>
+                        </form>
                     </div>
-                    <div class="col-md-8">
-                        <h5>Data Akun</h5>
-                        <ul class="list-group list-group-unbordered mb-3">
-                            <li class="list-group-item">
-                                <b>Username</b> <a class="float-right">{{ $user->username }}</a>
-                            </li>
-                            <li class="list-group-item">
-                                <b>Email</b> <a class="float-right">{{ $user->email }}</a>
-                            </li>
-                        </ul>
-                        {{-- Tombol untuk membuka modal Ubah Data Akun --}}
-                        <button type="button" class="btn btn-warning btn-sm mb-2" data-toggle="modal" data-target="#updateProfileModal">
-                            <i class="fas fa-edit"></i> Ubah Data Akun
-                        </button>
 
-                        <hr class="mt-4">
-
-                        <h5>Pengaturan Keamanan</h5>
-                        {{-- Tombol untuk membuka modal Ganti Password --}}
-                        <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#changePasswordModal">
-                            <i class="fas fa-key"></i> Ganti Password
-                        </button>
+                    {{-- Tab 2: Ganti Password --}}
+                    <div class="tab-pane fade" id="tab-password" role="tabpanel" aria-labelledby="tab-password-tab">
+                        <form action="{{ route('profile.change-password') }}" method="POST">
+                            @csrf
+                            @method('PUT')
+                            <div class="form-group">
+                                <label for="current_password">Password Saat Ini</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-lock-open"></i></span></div>
+                                    <input type="password" name="current_password" id="current_password" class="form-control @error('current_password') is-invalid @enderror" required>
+                                    @error('current_password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="new_password">Password Baru</label>
+                                <div class="input-group">
+                                     <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-lock"></i></span></div>
+                                    <input type="password" name="new_password" id="new_password" class="form-control @error('new_password') is-invalid @enderror" required>
+                                    @error('new_password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="new_password_confirmation">Konfirmasi Password Baru</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-lock"></i></span></div>
+                                    <input type="password" name="new_password_confirmation" id="new_password_confirmation" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="form-group text-right">
+                                <button type="submit" class="btn btn-danger"><i class="fas fa-key mr-1"></i> Ganti Password</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -81,10 +143,10 @@
                 @csrf
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="photo">Pilih foto baru</label>
+                        <label for="photo_modal">Pilih foto baru</label>
                         <div class="custom-file">
                             <input type="file" name="photo" id="photo_modal" class="custom-file-input @error('photo') is-invalid @enderror" onchange="updateFileName(this, 'photo_modal_label')">
-                            <label class="custom-file-label" for="photo_modal" id="photo_modal_label">Pilih foto baru</label>
+                            <label class="custom-file-label" for="photo_modal" id="photo_modal_label">Pilih file...</label>
                         </div>
                         @error('photo')
                             <div class="invalid-feedback d-block">{{ $message }}</div>
@@ -94,87 +156,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary">Ubah Foto</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-{{-- Modal Ubah Data Akun --}}
-<div class="modal fade" id="updateProfileModal" tabindex="-1" role="dialog" aria-labelledby="updateProfileModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="updateProfileModalLabel">Ubah Data Akun</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form action="{{ route('profile.update-profile') }}" method="POST">
-                @csrf
-                @method('PUT')
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="name_modal">Username</label>
-                        <input type="text" name="username" id="name_modal" class="form-control @error('username') is-invalid @enderror" value="{{ old('username', $user->username) }}" required>
-                        @error('name')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                    <div class="form-group">
-                        <label for="email_modal">Email</label>
-                        <input type="email" name="email" id="email_modal" class="form-control @error('email') is-invalid @enderror" value="{{ old('email', $user->email) }}" required>
-                        @error('email')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-warning">Simpan Perubahan Data</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-{{-- Modal Ganti Password --}}
-<div class="modal fade" id="changePasswordModal" tabindex="-1" role="dialog" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="changePasswordModalLabel">Ganti Password</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form action="{{ route('profile.change-password') }}" method="POST">
-                @csrf
-                @method('PUT')
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="current_password_modal">Password Saat Ini</label>
-                        <input type="password" name="current_password" id="current_password_modal" class="form-control @error('current_password') is-invalid @enderror" required>
-                        @error('current_password')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                    <div class="form-group">
-                        <label for="new_password_modal">Password Baru</label>
-                        <input type="password" name="new_password" id="new_password_modal" class="form-control @error('new_password') is-invalid @enderror" required>
-                        @error('new_password')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                    <div class="form-group">
-                        <label for="new_password_confirmation_modal">Konfirmasi Password Baru</label>
-                        <input type="password" name="new_password_confirmation" id="new_password_confirmation_modal" class="form-control" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-danger">Ganti Password</button>
+                    <button type="submit" class="btn btn-primary">Simpan Foto</button>
                 </div>
             </form>
         </div>
@@ -186,22 +168,23 @@
 <script>
     // Fungsi untuk memperbarui nama file di label custom file input
     function updateFileName(input, labelId) {
-        const fileName = input.files[0] ? input.files[0].name : 'Pilih foto baru';
+        const fileName = input.files[0] ? input.files[0].name : 'Pilih file...';
         document.getElementById(labelId).innerText = fileName;
     }
 
-    // Script untuk menampilkan modal jika ada error validasi setelah submit
+    // Script untuk membuka kembali modal jika ada error validasi
     document.addEventListener('DOMContentLoaded', function() {
         @if ($errors->has('photo'))
             $('#updatePhotoModal').modal('show');
         @endif
 
+        // Script untuk mengaktifkan tab yang benar jika ada error validasi
         @if ($errors->has('username') || $errors->has('email'))
-            $('#updateProfileModal').modal('show');
+            $('#tab-profile-tab').tab('show');
         @endif
 
         @if ($errors->has('current_password') || $errors->has('new_password'))
-            $('#changePasswordModal').modal('show');
+            $('#tab-password-tab').tab('show');
         @endif
     });
 </script>

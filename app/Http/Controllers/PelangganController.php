@@ -2,22 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Pelanggan; // Pastikan model Pelanggan sudah ada
+use App\Models\Pelanggan;
 use Illuminate\Http\Request;
+use App\Exports\PelangganExport; 
+use Maatwebsite\Excel\Facades\Excel;
 
 class PelangganController extends Controller
 {
-    public function index(Request $request) // Tambahkan Request $request
+    /**
+     * Menampilkan daftar pelanggan dengan filter dan paginasi.
+     */
+    public function index(Request $request)
     {
-        // Ambil parameter filter dari request
-        $limit = $request->input('limit', 10); // Default 10 data per halaman
+        // Mengambil parameter dari request
+        $limit = $request->input('limit', 10);
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
         $searchQuery = $request->input('search_query');
 
-        $query = Pelanggan::query(); // Mulai query
+        // Memulai query builder
+        $query = Pelanggan::query();
 
-        // Terapkan filter tanggal jika ada
+        // Filter berdasarkan rentang tanggal
         if ($startDate) {
             $query->whereDate('created_at', '>=', $startDate);
         }
@@ -25,25 +31,25 @@ class PelangganController extends Controller
             $query->whereDate('created_at', '<=', $endDate);
         }
 
-        // Terapkan filter pencarian jika ada (berdasarkan nama atau kode_pelanggan)
+        // Filter berdasarkan pencarian nama atau kode pelanggan
         if ($searchQuery) {
-            $query->where(function($q) use ($searchQuery) {
+            $query->where(function ($q) use ($searchQuery) {
                 $q->where('nama', 'like', '%' . $searchQuery . '%')
                   ->orWhere('kode_pelanggan', 'like', '%' . $searchQuery . '%');
             });
         }
 
-        // Ambil data dengan paginasi, urutkan berdasarkan yang terbaru dibuat
+        // Mengambil data dengan urutan terbaru dan paginasi
         $data = $query->latest()->paginate($limit);
 
-        // Kirim semua variabel yang diperlukan ke view
-        return view('pages.pelanggan.index', compact('data', 'limit', 'startDate', 'endDate', 'searchQuery'));
+        // PERUBAHAN: Menghitung total seluruh pelanggan dan mengirimkannya ke view
+        $totalPelanggan = Pelanggan::count();
+
+        return view('pages.pelanggan.index', compact('data', 'limit', 'startDate', 'endDate', 'searchQuery', 'totalPelanggan'));
     }
 
     /**
-     * Menampilkan form untuk membuat pelanggan baru.
-     *
-     * @return \Illuminate\View\View
+     * Menampilkan formulir untuk membuat pelanggan baru.
      */
     public function create()
     {
@@ -52,10 +58,7 @@ class PelangganController extends Controller
     }
 
     /**
-     * Menyimpan pelanggan baru ke database.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
+     * Menyimpan data pelanggan baru ke database.
      */
     public function store(Request $request)
     {
@@ -64,7 +67,7 @@ class PelangganController extends Controller
             'nama' => 'required|string|max:255',
             'email' => 'required|email|unique:pelanggan,email|max:255',
             'no_hp' => 'required|string|max:20',
-            'alamat' => 'nullable|string|max:500',
+            'alamat' => 'required|string|max:500',
         ]);
 
         try {
@@ -76,10 +79,7 @@ class PelangganController extends Controller
     }
 
     /**
-     * Mengambil data pelanggan tertentu dalam format JSON untuk modal detail.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\JsonResponse
+     * Mengambil data pelanggan spesifik untuk ditampilkan (misal: di modal).
      */
     public function show(int $id)
     {
@@ -88,10 +88,7 @@ class PelangganController extends Controller
     }
 
     /**
-     * Menampilkan form untuk mengedit pelanggan tertentu.
-     *
-     * @param  int  $id
-     * @return \Illuminate\View\View
+     * Menampilkan formulir untuk mengedit data pelanggan.
      */
     public function edit(int $id)
     {
@@ -100,11 +97,7 @@ class PelangganController extends Controller
     }
 
     /**
-     * Memperbarui data pelanggan tertentu di database.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
+     * Memperbarui data pelanggan di database.
      */
     public function update(Request $request, int $id)
     {
@@ -115,7 +108,7 @@ class PelangganController extends Controller
             'nama' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:pelanggan,email,' . $pelanggan->id,
             'no_hp' => 'required|string|max:20',
-            'alamat' => 'nullable|string|max:500',
+            'alamat' => 'required|string|max:500',
         ]);
 
         try {
@@ -127,31 +120,31 @@ class PelangganController extends Controller
     }
 
     /**
-     * Menghapus pelanggan tertentu dari database.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
+     * Menghapus data pelanggan dari database.
      */
     public function destroy(int $id)
     {
-        $pelanggan = Pelanggan::findOrFail($id);
         try {
+            $pelanggan = Pelanggan::findOrFail($id);
             $pelanggan->delete();
-            return redirect()->route('pelanggan.index')->with('success', 'Data pelanggan berhasil dihapus!');
+
+            return response()->json(['success' => 'Data pelanggan berhasil dihapus!']);
+
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Gagal menghapus pelanggan: ' . $e->getMessage());
+            return response()->json(['error' => 'Gagal menghapus data. Mungkin data ini terkait dengan data lain.'], 500);
         }
     }
 
-    /**
-     * Menghasilkan kode pelanggan berikutnya.
-     *
-     * @return string
-     */
     private function generateNextKodePelanggan()
     {
         $latestPelanggan = Pelanggan::latest('id')->first();
         $nextId = ($latestPelanggan) ? $latestPelanggan->id + 1 : 1;
         return 'PLG-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
     }
+
+    public function exportExcel()
+    {
+        return Excel::download(new PelangganExport, 'data-pelanggan-' . now()->format('Y-m-d') . '.xlsx');
+    }
+
 }

@@ -15,8 +15,6 @@ use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\TransaksiExport;
 
-use Laravel\Pail\Options as PailOptions;
-
 class TransaksiController extends Controller
 {
    
@@ -52,6 +50,7 @@ class TransaksiController extends Controller
         $totalKeseluruhanTransaksi = $transaksi->sum('total');
 
         $rekening = Rekening::all();
+        $perusahaan = Perusahaan::first();
 
         return view('pages.transaksi.index', compact(
             'transaksi',
@@ -61,7 +60,8 @@ class TransaksiController extends Controller
             'startDate',
             'endDate',
             'searchQuery',
-            'rekening' 
+            'rekening' ,
+            'perusahaan'
         ));
     }
 
@@ -121,7 +121,6 @@ class TransaksiController extends Controller
                 'produk_id.*' => 'nullable|exists:produk,id',
                 'nama_produk.*' => 'required|string|max:255',
                 'keterangan.*' => 'nullable|string',
-                'bahan.*' => 'nullable|string|max:255',
                 'qty.*' => 'required|integer|min:1',
                 'ukuran.*' => 'nullable|string|max:255',
                 'satuan.*' => 'nullable|string|max:255',
@@ -153,7 +152,6 @@ class TransaksiController extends Controller
                         'produk_id' => $request->input('produk_id.' . $key),
                         'nama_produk' => $nama_produk,
                         'keterangan' => $request->input('keterangan.' . $key),
-                        'bahan' => $request->input('bahan.' . $key),
                         'qty' => $request->input('qty.' . $key),
                         'ukuran' => $request->input('ukuran.' . $key),
                         'satuan' => $request->input('satuan.' . $key),
@@ -236,7 +234,6 @@ class TransaksiController extends Controller
                 'produk_id.*' => 'nullable|exists:produk,id',
                 'nama_produk.*' => 'required|string|max:255',
                 'keterangan.*' => 'nullable|string',
-                'bahan.*' => 'nullable|string|max:255',
                 'qty.*' => 'required|integer|min:1',
                 'ukuran.*' => 'nullable|string|max:255',
                 'satuan.*' => 'nullable|string|max:255',
@@ -270,7 +267,6 @@ class TransaksiController extends Controller
                         'produk_id' => $request->input('produk_id.' . $key),
                         'nama_produk' => $nama_produk,
                         'keterangan' => $request->input('keterangan.' . $key),
-                        'bahan' => $request->input('bahan.' . $key),
                         'qty' => $request->input('qty.' . $key),
                         'ukuran' => $request->input('ukuran.' . $key),
                         'satuan' => $request->input('satuan.' . $key),
@@ -391,7 +387,6 @@ class TransaksiController extends Controller
         if ($produk) {
             return response()->json([
                 'nama_produk' => $produk->nama,
-                'bahan' => $produk->bahan ?? '',
                 'ukuran' => $produk->ukuran,
                 'satuan' => $produk->satuan ?? '',
                 'harga' => $produk->harga_jual,
@@ -442,7 +437,7 @@ class TransaksiController extends Controller
     public function pendapatanIndex(Request $request)
     {
         $query = Transaksi::with(['pelanggan', 'rekening'])
-                                        ->where('uang_muka', '>', 0)
+                                        ->where('total', '>', 0)
                                         ->latest();
 
         // $startDate = $request->input('start_date'); 
@@ -487,7 +482,7 @@ class TransaksiController extends Controller
 
         $pendapatanTransaksi = $query->get();
 
-        $totalPendapatan = $pendapatanTransaksi->sum('uang_muka');
+        $totalPendapatan = $pendapatanTransaksi->sum('total');
 
         $rekening = Rekening::all();
 

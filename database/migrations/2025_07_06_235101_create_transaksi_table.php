@@ -6,10 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     * Membuat tabel 'transaksi' untuk menyimpan data transaksi.
-     */
     public function up(): void
     {
         Schema::create('transaksi', function (Blueprint $table) {

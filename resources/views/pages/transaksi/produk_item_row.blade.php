@@ -8,7 +8,6 @@
                 @foreach($produks as $produk)
                     <option value="{{ $produk->nama }}"
                             data-id="{{ $produk->id }}"
-                            data-bahan="{{ $produk->bahan->nama ?? '' }}"
                             data-ukuran="{{ $produk->ukuran }}"
                             data-satuan="{{ $produk->satuan->nama ?? '' }}"
                             data-harga="{{ $produk->harga_jual }}"
@@ -26,12 +25,6 @@
         <div class="form-group">
             <label>Keterangan</label>
             <input type="text" name="keterangan[{{ $index }}]" class="form-control" placeholder="Keterangan" value="{{ old('keterangan.' . $index, $detail->keterangan ?? '') }}">
-        </div>
-    </div>
-    <div class="col-md-1">
-        <div class="form-group">
-            <label>Bahan</label>
-            <input type="text" name="bahan[{{ $index }}]" class="form-control produk-bahan" readonly value="{{ old('bahan.' . $index, $detail->bahan ?? '') }}">
         </div>
     </div>
     <div class="col-md-1">
@@ -64,7 +57,7 @@
             @enderror
         </div>
     </div>
-    <div class="col-md-1">
+    <div class="col-md-2">
         <div class="form-group">
             <label>Total</label>
             <input type="text" name="total_item[{{ $index }}]" class="form-control item-total" value="{{ old('total_item.' . $index, $detail->total ?? 0) }}" readonly>

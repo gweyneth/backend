@@ -48,7 +48,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('omset-penjualan/export-excel', [OmsetPenjualanController::class, 'exportExcel'])->name('omset.export-excel');
     });
 
+    Route::prefix('profile')->name('profile.')->group(function () {
+        Route::get('/', [ProfileController::class, 'show'])->name('show');
+        Route::put('/update-profile', [ProfileController::class, 'updateProfile'])->name('update-profile');
+        Route::post('/update-photo', [ProfileController::class, 'updatePhoto'])->name('update-photo');
+        Route::put('/change-password', [ProfileController::class, 'changePassword'])->name('change-password');
+    });
+
     Route::middleware(['role:admin,kasir'])->group(function () {
+        Route::get('/pelanggan/export', [PelangganController::class, 'exportExcel'])->name('pelanggan.export');
         Route::resource('pelanggan', PelangganController::class);
         Route::get('transaksi/get-product-details', [TransaksiController::class, 'getProductDetails'])->name('transaksi.get-product-details');
         Route::get('transaksi/get-produk-item-row', [TransaksiController::class, 'getProdukItemRow'])->name('transaksi.get-produk-item-row');
@@ -57,12 +65,5 @@ Route::middleware(['auth'])->group(function () {
         Route::get('transaksi/{id}/print-invoice', [TransaksiController::class, 'printInvoice'])->name('transaksi.print-invoice');
         Route::get('transaksi/export-excel', [TransaksiController::class, 'exportExcel'])->name('transaksi.export-excel');
         Route::resource('transaksi', TransaksiController::class);
-
-        Route::prefix('profile')->name('profile.')->group(function () {
-            Route::get('/', [ProfileController::class, 'show'])->name('show');
-            Route::put('/update-profile', [ProfileController::class, 'updateProfile'])->name('update-profile');
-            Route::post('/update-photo', [ProfileController::class, 'updatePhoto'])->name('update-photo');
-            Route::put('/change-password', [ProfileController::class, 'changePassword'])->name('change-password');
-        });
     });
 });

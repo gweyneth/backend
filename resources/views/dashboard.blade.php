@@ -1,294 +1,253 @@
 @extends('layouts.app')
 
+@push('styles')
+<style>
+    /* Memberikan tinggi yang konsisten untuk info-box */
+    .info-box {
+        min-height: 120px;
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        border-radius: .5rem;
+    }
+    .info-box:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+    }
+    .info-box-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    /* Menambahkan gradien pada ikon info-box */
+    .info-box-icon {
+        border-radius: .5rem 0 0 .5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem !important;
+    }
+    .bg-gradient-primary { background: linear-gradient(135deg, #007bff, #6610f2) !important; }
+    .bg-gradient-info { background: linear-gradient(135deg, #17a2b8, #27c8a9) !important; }
+    .bg-gradient-success { background: linear-gradient(135deg, #28a745, #218838) !important; }
+    .bg-gradient-warning { background: linear-gradient(135deg, #ffc107, #fd7e14) !important; color: #fff !important; }
+    .bg-gradient-danger { background: linear-gradient(135deg, #dc3545, #c82333) !important; }
+    .bg-gradient-secondary { background: linear-gradient(135deg, #6c757d, #343a40) !important; }
+</style>
+@endpush
+
 @section('content_header')
-    <!-- Content Header (Page header) -->
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>Welcome</h1>
-                </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item active">Dashboard</li>
-                    </ol>
-                </div>
-            </div>
-        </div><!-- /.container-fluid -->
-    </section>
+    {{-- Sapaan personal dan tanggal --}}
+    <div class="row mb-2">
+        <div class="col-sm-6">
+            <h1 class="m-0">Selamat Datang, {{ Auth::user()->username ?? 'Pengguna' }}!</h1>
+            <small class="text-muted">{{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}</small>
+        </div>
+        <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+                <li class="breadcrumb-item active">Dashboard</li>
+            </ol>
+        </div>
+    </div>
 @endsection
 
 @section('content')
-    <section class="content">
-        <div class="row">
-            {{-- Orderan Total --}}
-            <div class="col-12 col-sm-6 col-md-4">
-                <div class="info-box">
-                    <span class="info-box-icon bg-info elevation-1" style="font-size: 2.5rem; width: 80px; height: 80px; line-height: 80px;">
-                        <i class="fas fa-shopping-cart"></i>
-                    </span>
-                    <div class="info-box-content">
-                        <span class="info-box-text" style="font-size: 1rem;">Orderan Total</span>
-                        <span class="info-box-number" style="font-size: 1.8rem;">
-                            {{ $totalOrderan }}
-                        </span>
-                    </div>
-                    <!-- /.info-box-content -->
+    {{-- Baris untuk Info Box --}}
+    <div class="row">
+        {{-- Total Omset Hari Ini --}}
+        <div class="col-lg-4 col-md-6 col-sm-12">
+            <div class="info-box shadow-sm">
+                <span class="info-box-icon bg-gradient-success"><i class="fas fa-hand-holding-usd"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Omset Hari Ini</span>
+                    <span class="info-box-number">Rp{{ number_format($totalOmsetHariIni, 0, ',', '.') }}</span>
                 </div>
-                <!-- /.info-box -->
             </div>
-            <!-- /.col -->
-
-            {{-- Orderan hari ini --}}
-            <div class="col-12 col-sm-6 col-md-4">
-                <div class="info-box mb-3">
-                    <span class="info-box-icon bg-danger elevation-1" style="font-size: 2.5rem; width: 80px; height: 80px; line-height: 80px;">
-                        <i class="fas fa-shopping-cart"></i>
-                    </span>
-                    <div class="info-box-content">
-                        <span class="info-box-text" style="font-size: 1rem;">Orderan hari ini</span>
-                        <span class="info-box-number" style="font-size: 1.8rem;">{{ $orderanHariIni }}</span>
-                    </div>
-                    <!-- /.info-box-content -->
-                </div>
-                <!-- /.info-box -->
-            </div>
-            <!-- /.col -->
-
-            {{-- Orderan Bulan Ini --}}
-            <div class="col-12 col-sm-6 col-md-4">
-                <div class="info-box mb-3">
-                    <span class="info-box-icon bg-success elevation-1" style="font-size: 2.5rem; width: 80px; height: 80px; line-height: 80px;">
-                        <i class="fas fa-shopping-cart"></i>
-                    </span>
-                    <div class="info-box-content">
-                        <span class="info-box-text" style="font-size: 1rem;">Orderan Bulan Ini</span>
-                        <span class="info-box-number" style="font-size: 1.8rem;">{{ $orderanBulanIni }}</span>
-                    </div>
-                    <!-- /.info-box-content -->
-                </div>
-                <!-- /.info-box -->
-            </div>
-            <!-- /.col -->
         </div>
-        <!-- /.row -->
-
-        <div class="row">
-            {{-- Total Konsumen --}}
-            <div class="col-12 col-sm-6 col-md-4">
-                <div class="info-box">
-                    <span class="info-box-icon bg-info elevation-1" style="font-size: 2.5rem; width: 80px; height: 80px; line-height: 80px;">
-                        <i class="fas fa-users"></i>
-                    </span>
-                    <div class="info-box-content">
-                        <span class="info-box-text" style="font-size: 1rem;">Total Konsumen</span>
-                        <span class="info-box-number" style="font-size: 1.8rem;">
-                            {{ $totalKonsumen }}
-                        </span>
-                    </div>
-                    <!-- /.info-box-content -->
+        {{-- Total Pengeluaran Hari Ini --}}
+        <div class="col-lg-4 col-md-6 col-sm-12">
+            <div class="info-box shadow-sm">
+                <span class="info-box-icon bg-gradient-danger"><i class="fas fa-arrow-circle-down"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Pengeluaran Hari Ini</span>
+                    <span class="info-box-number">Rp{{ number_format($totalPengeluaranHariIni, 0, ',', '.') }}</span>
                 </div>
-                <!-- /.info-box -->
             </div>
-            <!-- /.col -->
-
-            {{-- Total omset hari ini --}}
-            <div class="col-12 col-sm-6 col-md-4">
-                <div class="info-box mb-3">
-                    <span class="info-box-icon bg-secondary elevation-1" style="font-size: 2.5rem; width: 80px; height: 80px; line-height: 80px;">
-                        <i class="fas fa-money-bill-wave"></i>
-                    </span>
-                    <div class="info-box-content">
-                        <span class="info-box-text" style="font-size: 1rem;">Total omset hari ini</span>
-                        <span class="info-box-number" style="font-size: 1.8rem;">Rp{{ number_format($totalOmsetHariIni, 0, ',', '.') }}</span>
-                    </div>
-                    <!-- /.info-box-content -->
-                </div>
-                <!-- /.info-box -->
-            </div>
-            <!-- /.col -->
-
-            {{-- Total pengeluaran hari ini --}}
-            <div class="col-12 col-sm-6 col-md-4">
-                <div class="info-box mb-3">
-                    <span class="info-box-icon bg-warning elevation-1" style="font-size: 2.5rem; width: 80px; height: 80px; line-height: 80px;">
-                        <i class="fas fa-money-bill-wave"></i>
-                    </span>
-                    <div class="info-box-content">
-                        <span class="info-box-text" style="font-size: 1rem;">Total pengeluaran hari ini</span>
-                        <span class="info-box-number" style="font-size: 1.8rem;">Rp{{ number_format($totalPengeluaranHariIni, 0, ',', '.') }}</span>
-                    </div>
-                    <!-- /.info-box-content -->
-                </div>
-                <!-- /.info-box -->
-            </div>
-            <!-- /.col -->
         </div>
-        <!-- /.row -->
-
-        <div class="row mt-4">
-            {{-- Card Transaksi Terbaru --}}
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header border-transparent">
-                        <h3 class="card-title">Transaksi</h3>
-                        <div class="card-tools">
-                            <a href="{{ route('transaksi.index') }}" class="btn btn-sm btn-primary">Semua ></a>
-                        </div>
-                    </div>
-                    <!-- /.card-header -->
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table m-0">
-                                <thead>
-                                    <tr>
-                                        <th>Invoice</th>
-                                        <th>Konsumen</th>
-                                        <th>Status</th>
-                                        {{-- Kolom Kasir dihapus --}}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse ($recentTransactions as $transaction)
-                                    <tr>
-                                        <td>
-                                            <a href="{{ route('transaksi.show', $transaction->id) }}">
-                                                {{ $transaction->no_transaksi }}
-                                            </a>
-                                        </td>
-                                        <td>{{ $transaction->pelanggan->nama ?? 'Umum' }}</td>
-                                        <td>
-                                            @php
-                                                $statusClass = '';
-                                                if ($transaction->sisa == 0) {
-                                                    $statusClass = 'badge badge-success'; // Lunas
-                                                } else if ($transaction->uang_muka > 0 && $transaction->sisa > 0) {
-                                                    $statusClass = 'badge badge-warning'; // Bayar Sebagian
-                                                } else {
-                                                    $statusClass = 'badge badge-danger'; // Belum Lunas
-                                                }
-                                            @endphp
-                                            <span class="{{ $statusClass }}">
-                                                @if ($transaction->sisa == 0)
-                                                    Lunas
-                                                @elseif ($transaction->uang_muka > 0 && $transaction->sisa > 0)
-                                                    Bayar Sebagian
-                                                @else
-                                                    Belum Lunas
-                                                @endif
-                                            </span>
-                                        </td>
-                                        {{-- Data Kasir dihapus --}}
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="3" class="text-center">Tidak ada transaksi terbaru.</td> {{-- colspan disesuaikan --}}
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                        <!-- /.table-responsive -->
-                    </div>
-                    <!-- /.card-body -->
+        {{-- Total Konsumen --}}
+        <div class="col-lg-4 col-md-6 col-sm-12">
+            <div class="info-box shadow-sm">
+                <span class="info-box-icon bg-gradient-warning"><i class="fas fa-users"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Total Konsumen</span>
+                    <span class="info-box-number">{{ $totalKonsumen }}</span>
                 </div>
             </div>
-            <!-- /.col -->
-
-            {{-- Card Piutang Terbesar --}}
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header border-transparent">
-                        <h3 class="card-title">Piutang Terbesar</h3>
-                        <div class="card-tools">
-                            <a href="{{ route('piutang.index') }}" class="btn btn-sm btn-primary">Semua ></a>
-                        </div>
-                    </div>
-                    <!-- /.card-header -->
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table m-0">
-                                <thead>
-                                    <tr>
-                                        <th>No.</th>
-                                        <th>Invoice</th>
-                                        <th>Pelanggan</th>
-                                        <th>Sisa Piutang</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse ($largestReceivables as $index => $receivable)
-                                    <tr>
-                                        <td>{{ $index + 1 }}</td>
-                                        <td>
-                                            <a href="{{ route('transaksi.show', $receivable->id) }}">
-                                                {{ $receivable->no_transaksi }}
-                                            </a>
-                                        </td>
-                                        <td>{{ $receivable->pelanggan->nama ?? 'Umum' }}</td>
-                                        <td>Rp{{ number_format($receivable->sisa, 0, ',', '.') }}</td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="4" class="text-center">Tidak ada data piutang terbesar.</td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                        <!-- /.table-responsive -->
-                    </div>
-                    <!-- /.card-body -->
-                </div>
-            </div>
-            <!-- /.col -->
         </div>
-        <!-- /.row -->
-    </section>
+        {{-- Orderan Hari Ini --}}
+        <div class="col-lg-4 col-md-6 col-sm-12">
+            <div class="info-box shadow-sm">
+                <span class="info-box-icon bg-gradient-info"><i class="fas fa-receipt"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Orderan Hari Ini</span>
+                    <span class="info-box-number">{{ $orderanHariIni }}</span>
+                </div>
+            </div>
+        </div>
+        {{-- Orderan Bulan Ini --}}
+        <div class="col-lg-4 col-md-6 col-sm-12">
+            <div class="info-box shadow-sm">
+                <span class="info-box-icon bg-gradient-secondary"><i class="fas fa-calendar-alt"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Orderan Bulan Ini</span>
+                    <span class="info-box-number">{{ $orderanBulanIni }}</span>
+                </div>
+            </div>
+        </div>
+        {{-- Orderan Total --}}
+        <div class="col-lg-4 col-md-6 col-sm-12">
+            <div class="info-box shadow-sm">
+                <span class="info-box-icon bg-gradient-primary"><i class="fas fa-chart-pie"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Orderan Total</span>
+                    <span class="info-box-number">{{ $totalOrderan }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        {{-- Kolom Utama untuk Grafik --}}
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header border-0">
+                    <h3 class="card-title"><i class="fas fa-chart-area mr-2"></i>Ringkasan Performa Bulanan</h3>
+                </div>
+                <div class="card-body">
+                    <div class="chart">
+                        <canvas id="performanceChart" style="min-height: 300px; height: 300px; max-height: 300px; max-width: 100%;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Kolom Samping untuk Transaksi Terbaru --}}
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header border-0">
+                    <h3 class="card-title"><i class="fas fa-history mr-2"></i>Transaksi Terbaru</h3>
+                    <div class="card-tools">
+                        <a href="{{ route('transaksi.index') }}" class="btn btn-sm btn-primary">Lihat Semua</a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover m-0">
+                            <tbody>
+                                @forelse ($recentTransactions as $transaction)
+                                <tr>
+                                    <td>
+                                        <a href="{{ route('transaksi.show', $transaction->id) }}">{{ $transaction->no_transaksi }}</a>
+                                        <small class="d-block text-muted">{{ $transaction->pelanggan->nama ?? 'Umum' }}</small>
+                                    </td>
+                                    <td class="text-right">
+                                        @php
+                                            $statusClass = $transaction->sisa == 0 ? 'badge-success' : ($transaction->uang_muka > 0 ? 'badge-warning' : 'badge-danger');
+                                            $statusText = $transaction->sisa == 0 ? 'Lunas' : ($transaction->uang_muka > 0 ? 'DP' : 'Belum Lunas');
+                                        @endphp
+                                        <span class="badge {{ $statusClass }}">{{ $statusText }}</span>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td class="text-center py-4">Tidak ada transaksi terbaru.</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@push('scripts')
+{{-- Memuat library Chart.js --}}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const Toast = Swal.mixin({
-            toast: true,
-            position: 'top-end', // Posisi di kanan atas
-            showConfirmButton: false,
-            timer: 3000,
-            timerProgressBar: true,
-            didOpen: (toast) => {
-                toast.addEventListener('mouseenter', Swal.stopTimer);
-                toast.addEventListener('mouseleave', Swal.resumeTimer);
+document.addEventListener('DOMContentLoaded', function() {
+    // Data untuk grafik (pastikan variabel ini dikirim dari controller)
+    const labels = @json($monthlyIncomeLabels ?? []);
+    const incomeData = @json($monthlyIncomeValues ?? []);
+    const transactionData = @json($monthlyTransactionCounts ?? []);
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+
+    const config = {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Pendapatan',
+                    data: incomeData,
+                    backgroundColor: 'rgba(0, 123, 255, 0.7)',
+                    borderColor: 'rgba(0, 123, 255, 1)',
+                    yAxisID: 'y',
+                    order: 2
+                },
+                {
+                    label: 'Jumlah Transaksi',
+                    data: transactionData,
+                    borderColor: 'rgba(255, 193, 7, 1)',
+                    backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                    type: 'line',
+                    yAxisID: 'y1',
+                    order: 1,
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Pendapatan (Rp)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return 'Rp' + new Intl.NumberFormat('id-ID').format(value);
+                        }
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Jumlah Transaksi'
+                    },
+                    grid: {
+                        drawOnChartArea: false, // only want the grid lines for one axis to show up
+                    },
+                }
             }
-        });
+        }
+    };
 
-        // Tampilkan pesan sukses dari sesi (misal: setelah berhasil login)
-        @if (session('success'))
-            Toast.fire({
-                icon: 'success',
-                title: '{{ session('success') }}'
-            });
-        @endif
-
-        // Tampilkan pesan error dari sesi (misal: username/password salah)
-        @if (session('error'))
-            Toast.fire({
-                icon: 'error',
-                title: '{{ session('error') }}'
-            });
-        @endif
-
-        @if ($errors->any())
-            @foreach ($errors->all() as $error)
-                Toast.fire({
-                    icon: 'error',
-                    title: '{{ $error }}'
-                });
-            @endforeach
-        @endif
-    });
+    const performanceChart = new Chart(ctx, config);
+});
 </script>
-
-@push('styles')
-    {{-- Tambahkan style khusus untuk halaman dashboard di sini jika diperlukan --}}
 @endpush

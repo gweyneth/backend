@@ -9,27 +9,20 @@ use Illuminate\Support\Facades\Hash; // Untuk mengenkripsi password
 
 class UserSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Contoh menambahkan user admin
         User::create([
-            'username' => 'admin', // Menggunakan 'name' sebagai username
+            'username' => 'admin', 
             'email' => 'admin@digitalprinting.com',
-            'password' => Hash::make('password'), // Ganti dengan password yang kuat
-            'role' => 'admin', // Role untuk admin
+            'password' => Hash::make('password'), 
+            'role' => 'admin',
         ]);
 
-        // Contoh menambahkan user kasir
         User::create([
-            'username' => 'kasir', // Menggunakan 'name' sebagai username
+            'username' => 'kasir', 
             'email' => 'kasir@digitalprinting.com',
-            'password' => Hash::make('password'), // Ganti dengan password yang kuat
-            'role' => 'kasir', // Role untuk kasir
+            'password' => Hash::make('password'), 
+            'role' => 'kasir', 
         ]);
-
-        // Anda bisa menambahkan lebih banyak user di sini
     }
 }

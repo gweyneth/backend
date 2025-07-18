@@ -26,7 +26,6 @@ class KaryawanController extends Controller
             $query->whereDate('created_at', '<=', $endDate);
         }
 
-        
         if ($searchQuery) {
             $query->where(function($q) use ($searchQuery) {
                 $q->where('nama_karyawan', 'like', '%' . $searchQuery . '%')
@@ -34,13 +33,11 @@ class KaryawanController extends Controller
             });
         }
 
-        
         $karyawan = $query->latest()->paginate($limit);
 
         return view('pages.karyawan.index', compact('karyawan', 'limit', 'startDate', 'endDate', 'searchQuery'));
     }
 
-    
     public function create()
     {
         $nextIdKaryawan = $this->generateNextIdKaryawan();
@@ -49,15 +46,16 @@ class KaryawanController extends Controller
 
     public function store(Request $request)
     {
+        // PERBAIKAN: Menyesuaikan validasi agar konsisten dengan form (required)
         $validatedData = $request->validate([
             'id_karyawan' => 'required|string|unique:karyawan,id_karyawan|max:20', 
             'nama_karyawan' => 'required|string|max:255',
-            'nik' => 'nullable|string|max:20',
+            'nik' => 'nullable|string|max:20|unique:karyawan,nik',
             'jabatan' => 'required|string|max:100',
             'status' => 'required|in:Tetap,Kontrak,Magang', 
-            'alamat' => 'nullable|string|max:500',
-            'no_handphone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255|unique:karyawan,email', 
+            'alamat' => 'required|string|max:500',
+            'no_handphone' => 'required|string|max:20',
+            'email' => 'required|email|max:255|unique:karyawan,email', 
             'gaji_pokok' => 'required|numeric|min:0',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
@@ -90,15 +88,15 @@ class KaryawanController extends Controller
     {
         $karyawan = Karyawan::findOrFail($id);
 
+        // PERBAIKAN: Menyesuaikan validasi agar konsisten dengan form (required)
         $validatedData = $request->validate([
-            'id_karyawan' => 'required|string|max:20|unique:karyawan,id_karyawan,' . $karyawan->id, 
             'nama_karyawan' => 'required|string|max:255',
-            'nik' => 'nullable|string|max:20',
+            'nik' => 'nullable|string|max:20|unique:karyawan,nik,' . $karyawan->id,
             'jabatan' => 'required|string|max:100',
             'status' => 'required|in:Tetap,Kontrak,Magang',
-            'alamat' => 'nullable|string|max:500',
-            'no_handphone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255|unique:karyawan,email,' . $karyawan->id,
+            'alamat' => 'required|string|max:500',
+            'no_handphone' => 'required|string|max:20',
+            'email' => 'required|email|max:255|unique:karyawan,email,' . $karyawan->id,
             'gaji_pokok' => 'required|numeric|min:0',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', 
         ]);
@@ -118,17 +116,25 @@ class KaryawanController extends Controller
         }
     }
 
+    /**
+     * PERBAIKAN: Mengubah metode destroy untuk mengembalikan JSON response
+     * agar kompatibel dengan AJAX delete.
+     */
     public function destroy(int $id)
     {
-        $karyawan = Karyawan::findOrFail($id);
         try {
+            $karyawan = Karyawan::findOrFail($id);
+            
             if ($karyawan->foto && Storage::disk('public')->exists($karyawan->foto)) {
                 Storage::disk('public')->delete($karyawan->foto);
             }
+            
             $karyawan->delete();
-            return redirect()->route('karyawan.index')->with('success', 'Data karyawan berhasil dihapus!');
+            
+            return response()->json(['success' => 'Data karyawan berhasil dihapus!']);
+
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Gagal menghapus karyawan: ' . $e->getMessage());
+            return response()->json(['error' => 'Gagal menghapus data.'], 500);
         }
     }
 
@@ -141,7 +147,6 @@ class KaryawanController extends Controller
         return Excel::download(new KaryawanExport($startDate, $endDate, $searchQuery), 'data_karyawan.xlsx');
     }
 
-    
     private function generateNextIdKaryawan()
     {
         $latestKaryawan = Karyawan::latest('id')->first();
