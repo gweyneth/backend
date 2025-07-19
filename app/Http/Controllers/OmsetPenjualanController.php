@@ -16,14 +16,14 @@ class OmsetPenjualanController extends Controller
     {
         $produks = Produk::all();
         $selectedProdukId = $request->input('produk_id');
-        $selectedMonth = $request->input('bulan', Carbon::now()->format('Y-m')); 
+        $selectedMonth = $request->input('bulan', Carbon::now()->format('Y-m'));
         $carbonMonth = Carbon::parse($selectedMonth);
         $startOfMonth = $carbonMonth->startOfMonth()->toDateString();
         $endOfMonth = $carbonMonth->endOfMonth()->toDateString();
         $query = TransaksiDetail::with(['transaksi', 'produk'])
-                    ->whereHas('transaksi', function ($q) use ($startOfMonth, $endOfMonth) {
-                        $q->whereBetween('tanggal_order', [$startOfMonth, $endOfMonth]);
-                    });
+            ->whereHas('transaksi', function ($q) use ($startOfMonth, $endOfMonth) {
+                $q->whereBetween('tanggal_order', [$startOfMonth, $endOfMonth]);
+            });
         if ($selectedProdukId && $selectedProdukId !== 'all') {
             $query->where('produk_id', $selectedProdukId);
         }
@@ -33,7 +33,7 @@ class OmsetPenjualanController extends Controller
         $omsetProduk = $filteredTransaksiDetails->groupBy('produk_id')->map(function ($details) {
             $productName = $details->first()->nama_produk;
             $totalQty = $details->sum('qty');
-            $totalOmset = $details->sum('total'); 
+            $totalOmset = $details->sum('total');
 
             return [
                 'nama_produk' => $productName,
@@ -62,9 +62,9 @@ class OmsetPenjualanController extends Controller
         $endOfMonth = $carbonMonth->endOfMonth()->toDateString();
 
         $query = TransaksiDetail::with(['transaksi', 'produk'])
-                    ->whereHas('transaksi', function ($q) use ($startOfMonth, $endOfMonth) {
-                        $q->whereBetween('tanggal_order', [$startOfMonth, $endOfMonth]);
-                    });
+            ->whereHas('transaksi', function ($q) use ($startOfMonth, $endOfMonth) {
+                $q->whereBetween('tanggal_order', [$startOfMonth, $endOfMonth]);
+            });
 
         if ($selectedProdukId && $selectedProdukId !== 'all') {
             $query->where('produk_id', $selectedProdukId);
@@ -88,7 +88,7 @@ class OmsetPenjualanController extends Controller
 
         $fileName = 'omset_penjualan_' . date('Ym', strtotime($selectedMonth)) . '.xlsx';
 
-       
+
         return Excel::download(new OmsetPenjualanExport($omsetProduk, $subtotalOmset, $selectedMonth), $fileName);
     }
 }

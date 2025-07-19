@@ -35,6 +35,7 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('karyawan', KaryawanController::class);
         Route::get('karyawan/export/excel', [KaryawanController::class, 'exportExcel'])->name('karyawan.export_excel');
         Route::resource('pengeluaran', PengeluaranController::class);
+        Route::get('/pengeluaran/export/excel', [PengeluaranController::class, 'exportExcel'])->name('pengeluaran.export.excel');
         Route::resource('gaji', GajiKaryawanController::class);
         Route::get('gaji-karyawan/export-excel', [GajiKaryawanController::class, 'exportExcel'])->name('gaji.export-excel');
         Route::singleton('perusahaan', PerusahaanController::class);
@@ -46,6 +47,7 @@ Route::middleware(['auth'])->group(function () {
         // Route::get('kasbon-karyawan', [KasbonKaryawanController::class, 'index'])->name('kasbon-karyawan.index');
         Route::get('omset-penjualan', [OmsetPenjualanController::class, 'index'])->name('omset.index');
         Route::get('omset-penjualan/export-excel', [OmsetPenjualanController::class, 'exportExcel'])->name('omset.export-excel');
+        Route::get('/pendapatan/export-excel', [TransaksiController::class, 'exportExcelPendapatan'])->name('pendapatan.export-excel');
     });
 
     Route::prefix('profile')->name('profile.')->group(function () {

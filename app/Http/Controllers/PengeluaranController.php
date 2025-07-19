@@ -3,22 +3,55 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pengeluaran;
-use App\Models\Karyawan; // Import model Karyawan
+use App\Models\Karyawan;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage; // Tidak digunakan di sini, tapi bisa tetap ada jika diperlukan di metode lain
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use App\Exports\PengeluaranExport; // Import Class Export
+use Maatwebsite\Excel\Facades\Excel;
 
 class PengeluaranController extends Controller
 {
     /**
-     * Menampilkan daftar semua pengeluaran.
+     * Menampilkan daftar semua pengeluaran dengan filter dan pagination.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\View\View
      */
-    public function index()
+    public function index(Request $request)
     {
-        $pengeluaran = Pengeluaran::with('karyawan')->latest()->get(); // Ambil semua pengeluaran, urutkan terbaru, dan eager load karyawan
-        $totalPengeluaran = $pengeluaran->sum('total'); // Hitung total seluruh pengeluaran
-        return view('pages.pengeluaran.index', compact('pengeluaran', 'totalPengeluaran')); // Kirim totalPengeluaran ke view
+        // Mendapatkan nilai filter dari request
+        $searchQuery = $request->input('search_query');
+        $jenisPengeluaran = $request->input('jenis_pengeluaran');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        // Membangun query dengan filter
+        $query = Pengeluaran::with('karyawan')->latest();
+
+        if ($searchQuery) {
+            $query->where('keterangan', 'like', '%' . $searchQuery . '%');
+        }
+
+        if ($jenisPengeluaran) {
+            $query->where('jenis_pengeluaran', $jenisPengeluaran);
+        }
+
+        if ($startDate) {
+            $query->whereDate('created_at', '>=', $startDate);
+        }
+
+        if ($endDate) {
+            $query->whereDate('created_at', '<=', $endDate);
+        }
+
+        // Menggunakan pagination
+        $pengeluaran = $query->paginate(10); 
+
+        // Menghitung total pengeluaran untuk data yang ditampilkan di halaman saat ini
+        $totalPengeluaran = $pengeluaran->sum('total');
+
+        return view('pages.pengeluaran.index', compact('pengeluaran', 'totalPengeluaran'));
     }
 
     /**
@@ -28,8 +61,8 @@ class PengeluaranController extends Controller
      */
     public function create()
     {
-        $karyawan = Karyawan::all(); // Mengambil semua data karyawan untuk dropdown
-        return view('pages.pengeluaran.create', compact('karyawan')); // Mengirimkan data karyawan ke view
+        $karyawan = Karyawan::all();
+        return view('pages.pengeluaran.create', compact('karyawan'));
     }
 
     /**
@@ -42,13 +75,18 @@ class PengeluaranController extends Controller
     {
         $validatedData = $request->validate([
             'jenis_pengeluaran' => 'required|string|max:255',
-            // karyawan_id adalah nullable, tetapi akan wajib secara kondisional jika jenis_pengeluaran adalah 'Kasbon Karyawan'
-            'karyawan_id' => 'nullable|exists:karyawan,id',
+            'karyawan_id' => [
+                'nullable',
+                Rule::requiredIf($request->jenis_pengeluaran === 'Kasbon Karyawan'),
+                'exists:karyawan,id',
+            ],
             'keterangan' => 'nullable|string',
             'jumlah' => 'required|integer|min:1',
             'harga' => 'required|numeric|min:0',
+            // Total tidak perlu divalidasi karena dihitung di controller
         ], [
             'jenis_pengeluaran.required' => 'Jenis Pengeluaran wajib diisi.',
+            'karyawan_id.required' => 'Nama Karyawan wajib dipilih untuk Kasbon Karyawan.',
             'karyawan_id.exists' => 'Karyawan tidak valid.',
             'jumlah.required' => 'Jumlah wajib diisi.',
             'jumlah.integer' => 'Jumlah harus berupa angka bulat.',
@@ -58,20 +96,11 @@ class PengeluaranController extends Controller
             'harga.min' => 'Harga minimal 0.',
         ]);
 
-        // Logika validasi kondisional: Jika jenis pengeluaran adalah 'Kasbon Karyawan'
-        // maka karyawan_id harus dipilih.
-        if ($validatedData['jenis_pengeluaran'] === 'Kasbon Karyawan' && empty($validatedData['karyawan_id'])) {
-            return redirect()->back()->withErrors(['karyawan_id' => 'Nama Karyawan wajib dipilih untuk Kasbon Karyawan.'])->withInput();
-        }
-
-        // Hitung total pengeluaran
         $total = $validatedData['jumlah'] * $validatedData['harga'];
 
-        // Buat entri pengeluaran baru di database
         Pengeluaran::create([
             'jenis_pengeluaran' => $validatedData['jenis_pengeluaran'],
-            // Set karyawan_id hanya jika jenis pengeluaran adalah 'Kasbon Karyawan', jika tidak set null
-            'karyawan_id' => $validatedData['jenis_pengeluaran'] === 'Kasbon Karyawan' ? $validatedData['karyawan_id'] : null,
+            'karyawan_id' => $validatedData['karyawan_id'],
             'keterangan' => $validatedData['keterangan'],
             'jumlah' => $validatedData['jumlah'],
             'harga' => $validatedData['harga'],
@@ -81,26 +110,43 @@ class PengeluaranController extends Controller
         return redirect()->route('pengeluaran.index')->with('success', 'Pengeluaran berhasil ditambahkan!');
     }
 
+    /**
+     * Menampilkan form untuk mengedit pengeluaran.
+     *
+     * @param  int  $id
+     * @return \Illuminate\View\View
+     */
     public function edit(int $id)
     {
-        $pengeluaran = Pengeluaran::findOrFail($id);
-        $karyawan = Karyawan::all(); // Ambil semua data karyawan untuk dropdown
+        $pengeluaran = Pengeluaran::with('karyawan')->findOrFail($id);
+        $karyawan = Karyawan::all();
         return view('pages.pengeluaran.edit', compact('pengeluaran', 'karyawan'));
     }
 
-    
+    /**
+     * Memperbarui pengeluaran di database.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function update(Request $request, int $id)
     {
         $pengeluaran = Pengeluaran::findOrFail($id);
-
+        
         $validatedData = $request->validate([
             'jenis_pengeluaran' => 'required|string|max:255',
-            'karyawan_id' => 'nullable|exists:karyawan,id',
+            'karyawan_id' => [
+                'nullable',
+                Rule::requiredIf($request->jenis_pengeluaran === 'Kasbon Karyawan'),
+                'exists:karyawan,id',
+            ],
             'keterangan' => 'nullable|string',
             'jumlah' => 'required|integer|min:1',
             'harga' => 'required|numeric|min:0',
         ], [
             'jenis_pengeluaran.required' => 'Jenis Pengeluaran wajib diisi.',
+            'karyawan_id.required' => 'Nama Karyawan wajib dipilih untuk Kasbon Karyawan.',
             'karyawan_id.exists' => 'Karyawan tidak valid.',
             'jumlah.required' => 'Jumlah wajib diisi.',
             'jumlah.integer' => 'Jumlah harus berupa angka bulat.',
@@ -110,15 +156,11 @@ class PengeluaranController extends Controller
             'harga.min' => 'Harga minimal 0.',
         ]);
 
-        if ($validatedData['jenis_pengeluaran'] === 'Kasbon Karyawan' && empty($validatedData['karyawan_id'])) {
-            return redirect()->back()->withErrors(['karyawan_id' => 'Nama Karyawan wajib dipilih untuk Kasbon Karyawan.'])->withInput();
-        }
-
         $total = $validatedData['jumlah'] * $validatedData['harga'];
 
         $pengeluaran->update([
             'jenis_pengeluaran' => $validatedData['jenis_pengeluaran'],
-            'karyawan_id' => $validatedData['jenis_pengeluaran'] === 'Kasbon Karyawan' ? $validatedData['karyawan_id'] : null,
+            'karyawan_id' => $validatedData['karyawan_id'],
             'keterangan' => $validatedData['keterangan'],
             'jumlah' => $validatedData['jumlah'],
             'harga' => $validatedData['harga'],
@@ -132,13 +174,30 @@ class PengeluaranController extends Controller
      * Menghapus pengeluaran tertentu dari database.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function destroy(int $id)
     {
-        $pengeluaran = Pengeluaran::findOrFail($id);
-        $pengeluaran->delete();
+        try {
+            $pengeluaran = Pengeluaran::findOrFail($id);
+            $pengeluaran->delete();
 
-        return redirect()->route('pengeluaran.index')->with('success', 'Pengeluaran berhasil dihapus!');
+            return response()->json([
+                'success' => 'Pengeluaran berhasil dihapus.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Gagal menghapus pengeluaran.',
+            ], 500);
+        }
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $filters = $request->only(['search_query', 'jenis_pengeluaran', 'start_date', 'end_date']);
+        
+        $fileName = 'Laporan-Pengeluaran-' . now()->format('Y-m-d') . '.xlsx';
+
+        return Excel::download(new PengeluaranExport($filters), $fileName);
     }
 }

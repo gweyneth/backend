@@ -3,7 +3,7 @@
 @section('content_header')
 <div class="row mb-2">
     <div class="col-sm-6">
-        <h1 class="m-0">Data Pengeluaran</h1>
+        <h1 class="m-0"><i class="fas fa-arrow-circle-down mr-2"></i>Data Pengeluaran</h1>
     </div>
     <div class="col-sm-6">
         <ol class="breadcrumb float-sm-right">
@@ -17,88 +17,114 @@
 @section('content')
 <div class="row">
     <div class="col-md-12">
-        <div class="card">
+        <div class="card card-primary card-outline">
             <div class="card-header">
-                <h5 class="card-title">Daftar Pengeluaran</h5>
-                <span class="float-right">
-                    <a href="{{ route('pengeluaran.create') }}" class="btn btn-primary">Tambah Pengeluaran</a>
-                </span>
+                <h3 class="card-title">
+                    <i class="fas fa-list-alt mr-2"></i>Daftar Pengeluaran
+                </h3>
+                <div class="card-tools">
+                    <a href="{{ route('pengeluaran.create') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus mr-1"></i> Tambah Pengeluaran
+                    </a>
+                    <a href="{{ route('pengeluaran.export.excel', request()->query()) }}" class="btn btn-success btn-sm mr-2">
+                        <i class="fas fa-file-excel mr-1"></i> Ekspor Excel
+                    </a>
+                </div>
             </div>
             <div class="card-body">
-                @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('success') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+                {{-- Form Filter --}}
+                <form action="{{ route('pengeluaran.index') }}" method="GET" class="mb-4">
+                    <div class="form-row">
+                        <div class="col-md-3 mb-2">
+                            <label for="search_query">Cari Keterangan</label>
+                            <input type="text" name="search_query" id="search_query" class="form-control" placeholder="Masukkan keterangan" value="{{ request('search_query') }}">
+                        </div>
+                        <div class="col-md-auto mb-2">
+                            <label for="jenis_pengeluaran">Jenis Pengeluaran</label>
+                            <select name="jenis_pengeluaran" id="jenis_pengeluaran" class="form-control">
+                                <option value="">Semua Jenis</option>
+                                <option value="Operasional" {{ request('jenis_pengeluaran') == 'Operasional' ? 'selected' : '' }}>Operasional</option>
+                                <option value="Kasbon Karyawan" {{ request('jenis_pengeluaran') == 'Kasbon Karyawan' ? 'selected' : '' }}>Kasbon Karyawan</option>
+                                <option value="Lainnya" {{ request('jenis_pengeluaran') == 'Lainnya' ? 'selected' : '' }}>Lainnya</option>
+                            </select>
+                        </div>
+                        <div class="col-md-auto mb-2">
+                            <label for="start_date">Dari Tanggal</label>
+                            <input type="date" name="start_date" id="start_date" class="form-control" value="{{ request('start_date') }}">
+                        </div>
+                        <div class="col-md-auto mb-2">
+                            <label for="end_date">Sampai Tanggal</label>
+                            <input type="date" name="end_date" id="end_date" class="form-control" value="{{ request('end_date') }}">
+                        </div>
+                        <div class="col-md-auto mb-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-info"><i class="fas fa-search"></i> Cari</button>
+                            <a href="{{ route('pengeluaran.index') }}" class="btn btn-secondary ml-2"><i class="fas fa-sync-alt"></i> Reset</a>
+                        </div>
                     </div>
-                @endif
-
-                @if(session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        {{ session('error') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                @endif
+                </form>
 
                 <div class="table-responsive">
-                    <table class="table table-bordered table-striped">
-                        <thead>
+                    <table class="table table-bordered table-striped table-hover">
+                        <thead class="thead-light">
                             <tr>
-                                <th style="width: 50px;">No</th>
-                                <th>Jenis Pengeluaran</th>
-                                <th>Karyawan (Jika Kasbon)</th>
+                                <th style="width: 5%;">No</th>
                                 <th>Keterangan</th>
-                                <th>Jumlah</th>
-                                <th>Harga</th>
+                                <th>Jenis</th>
+                                <th>Karyawan (Kasbon)</th>
                                 <th>Total</th>
                                 <th>Tanggal</th>
-                                <th style="width: 150px;">Aksi</th>
+                                <th style="width: 10%;" class="text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($pengeluaran as $item)
-                            <tr>
-                                <td>{{ $loop->iteration }}</td>
-                                <td>{{ $item->jenis_pengeluaran }}</td>
-                                <td>
-                                    @if ($item->jenis_pengeluaran == 'Kasbon Karyawan' && $item->karyawan)
-                                        {{ $item->karyawan->nama_karyawan }} (NIK: {{ $item->karyawan->nik ?? '-' }})
-                                    @else
-                                        -
-                                    @endif
-                                </td>
+                            <tr id="pengeluaran-row-{{ $item->id }}">
+                                <td>{{ $loop->iteration + ($pengeluaran->currentPage() - 1) * $pengeluaran->perPage() }}</td>
                                 <td>{{ $item->keterangan }}</td>
-                                <td>{{ $item->jumlah }}</td>
-                                <td>Rp{{ number_format($item->harga, 2, ',', '.') }}</td>
-                                <td>Rp{{ number_format($item->total, 2, ',', '.') }}</td>
-                                <td>{{ $item->created_at->format('d/m/Y H:i') }}</td>
                                 <td>
-                                    <a href="{{ route('pengeluaran.edit', $item->id) }}" class="btn btn-warning btn-sm">Edit</a>
-                                    <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete('{{ $item->id }}')">Hapus</button>
-
-                                    {{-- Form DELETE tersembunyi untuk SweetAlert --}}
-                                    <form id="delete-form-{{ $item->id }}" action="{{ route('pengeluaran.destroy', $item->id) }}" method="POST" style="display: none;">
-                                        @csrf
-                                        @method('DELETE')
-                                    </form>
+                                    @php
+                                        $jenisClass = '';
+                                        switch ($item->jenis_pengeluaran) {
+                                            case 'Kasbon Karyawan': $jenisClass = 'badge-warning'; break;
+                                            case 'Operasional': $jenisClass = 'badge-info'; break;
+                                            default: $jenisClass = 'badge-secondary';
+                                        }
+                                    @endphp
+                                    <span class="badge {{ $jenisClass }}">{{ $item->jenis_pengeluaran }}</span>
+                                </td>
+                                <td>{{ $item->karyawan->nama_karyawan ?? '-' }}</td>
+                                <td><strong>Rp{{ number_format($item->total, 0, ',', '.') }}</strong></td>
+                                <td>{{ $item->created_at->format('d M Y') }}</td>
+                                <td class="text-center">
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ route('pengeluaran.edit', $item->id) }}" class="btn btn-warning btn-sm" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete('{{ $item->id }}', '{{ $item->keterangan }}')" title="Hapus">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="9" class="text-center">Tidak ada data pengeluaran.</td>
+                                <td colspan="7" class="text-center">Tidak ada data pengeluaran ditemukan.</td>
                             </tr>
                             @endforelse
                         </tbody>
-                        <tfoot>
+                        @if($pengeluaran->isNotEmpty())
+                        <tfoot class="bg-light">
                             <tr>
-                                <th colspan="6" class="text-right">Total Keseluruhan Pengeluaran:</th>
-                                <th colspan="3">Rp{{ number_format($totalPengeluaran, 2, ',', '.') }}</th>
+                                <th colspan="4" class="text-right">Total Pengeluaran (Halaman Ini):</th>
+                                <th colspan="3">Rp{{ number_format($totalPengeluaran, 0, ',', '.') }}</th>
                             </tr>
                         </tfoot>
+                        @endif
                     </table>
+                </div>
+
+                <div class="d-flex justify-content-center mt-3">
+                    {{-- {{ $pengeluaran->appends(request()->query())->links() }} --}}
                 </div>
             </div>
         </div>
@@ -107,23 +133,35 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> {{-- Pastikan SweetAlert2 terhubung --}}
 <script>
-    // Fungsi confirmDelete untuk SweetAlert2
-    function confirmDelete(id) {
+    function confirmDelete(id, keterangan) {
         Swal.fire({
-            title: 'Apakah Anda yakin?',
-            text: "Anda tidak akan bisa mengembalikan data ini!",
+            title: 'Konfirmasi Hapus',
+            html: `Apakah Anda yakin ingin menghapus pengeluaran: <strong>${keterangan}</strong>?`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya, hapus!',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-trash-alt"></i> Ya, Hapus!',
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
-                // Jika user konfirmasi, submit form delete yang tersembunyi
-                document.getElementById('delete-form-' + id).submit();
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                fetch(`/pengeluaran/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+                        Toast.fire({ icon: 'success', title: data.success });
+                        document.getElementById(`pengeluaran-row-${id}`).remove();
+                    } else {
+                        Swal.fire('Gagal!', data.error || 'Gagal menghapus data.', 'error');
+                    }
+                })
+                .catch(error => Swal.fire('Error!', 'Tidak dapat memproses permintaan.', 'error'));
             }
         });
     }

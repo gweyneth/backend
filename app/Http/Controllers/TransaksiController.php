@@ -14,6 +14,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\TransaksiExport;
+use App\Exports\PendapatanExport; 
 
 class TransaksiController extends Controller
 {
@@ -436,70 +437,66 @@ class TransaksiController extends Controller
 
     public function pendapatanIndex(Request $request)
     {
+        // Memulai query untuk transaksi yang sudah ada pembayarannya (lunas atau ada DP)
         $query = Transaksi::with(['pelanggan', 'rekening'])
-                                        ->where('total', '>', 0)
-                                        ->latest();
+            ->where(function ($q) {
+                $q->where('sisa', '=', 0)
+                  ->orWhere('uang_muka', '>', 0);
+            })
+            ->latest('updated_at'); // Diurutkan berdasarkan tanggal pembayaran terakhir
 
-        // $startDate = $request->input('start_date'); 
-        // $endDate = $request->input('end_date');     
-        // $tanggalBayarStart = $request->input('tanggal_bayar_start'); 
-        // $tanggalBayarEnd = $request->input('tanggal_bayar_end');     
-        $metodePembayaran = $request->input('metode_pembayaran');
-        $rekeningId = $request->input('rekening_id');
-        $searchQuery = $request->input('search_query');
-
-        // if ($startDate) {
-        //     $query->whereDate('tanggal_order', '>=', $startDate);
-        // }
-
-        // if ($endDate) {
-        //     $query->whereDate('tanggal_order', '<=', $endDate);
-        // }
-
-        // if ($tanggalBayarStart) {
-        //     $query->whereDate('updated_at', '>=', $tanggalBayarStart);
-        // }
-
-        // if ($tanggalBayarEnd) {
-        //     $query->whereDate('updated_at', '<=', $tanggalBayarEnd);
-        // }
-
-        if ($metodePembayaran && $metodePembayaran !== 'all') {
-            $query->where('metode_pembayaran', $metodePembayaran);
-        }
-
-        if ($rekeningId) {
-            $query->where('rekening_id', $rekeningId);
-        }
-
-        if ($searchQuery) {
-            $query->where(function($q) use ($searchQuery) {
-                $q->whereHas('pelanggan', function ($subQ) use ($searchQuery) {
-                    $subQ->where('nama', 'like', '%' . $searchQuery . '%');
-                })->orWhere('no_transaksi', 'like', '%' . $searchQuery . '%');
+        // Terapkan semua filter secara kondisional menggunakan when()
+        $query->when($request->filled('search_query'), function ($q) use ($request) {
+            $search = $request->input('search_query');
+            $q->where(function ($subq) use ($search) {
+                $subq->where('no_transaksi', 'like', "%{$search}%")
+                     ->orWhereHas('pelanggan', fn($pelangganQuery) => $pelangganQuery->where('nama', 'like', "%{$search}%"));
             });
-        }
+        });
 
-        $pendapatanTransaksi = $query->get();
+        $query->when($request->filled('start_date'), function ($q) use ($request) {
+            $q->whereDate('updated_at', '>=', $request->input('start_date'));
+        });
 
-        $totalPendapatan = $pendapatanTransaksi->sum('total');
+        $query->when($request->filled('end_date'), function ($q) use ($request) {
+            $q->whereDate('updated_at', '<=', $request->input('end_date'));
+        });
 
+        $query->when($request->filled('metode_pembayaran') && $request->input('metode_pembayaran') !== 'all', function ($q) use ($request) {
+            $q->where('metode_pembayaran', $request->input('metode_pembayaran'));
+        });
+
+        $query->when($request->input('metode_pembayaran') === 'transfer_bank' && $request->filled('rekening_id'), function ($q) use ($request) {
+            $q->where('rekening_id', $request->input('rekening_id'));
+        });
+
+        // Hitung total pendapatan (uang yang masuk) dari query yang sudah difilter.
+        // Penting: Kita menjumlahkan 'uang_muka' karena ini merepresentasikan total uang yang sudah dibayar.
+        $totalPendapatan = $query->sum('total');
+
+        // Ambil data untuk ditampilkan di halaman dengan paginasi agar lebih efisien
+        $pendapatanTransaksi = $query->paginate(15)->withQueryString();
+
+        // Ambil semua data rekening untuk dropdown filter
         $rekening = Rekening::all();
 
         return view('pages.pendapatan.index', compact(
             'pendapatanTransaksi',
             'totalPendapatan',
-            // 'startDate',
-            // 'endDate',
-            // 'tanggalBayarStart',
-            // 'tanggalBayarEnd',
-            'metodePembayaran',
-            'rekeningId',
-            'searchQuery',
-            'rekening' 
+            'rekening'
         ));
     }
-    
+
+    /**
+     * Menangani ekspor data pendapatan ke Excel.
+     */
+    public function exportExcelPendapatan(Request $request)
+    {
+        // Anda perlu membuat kelas App\Exports\PendapatanExport
+        // Jalankan: php artisan make:export PendapatanExport
+        $filters = $request->all();
+        return Excel::download(new PendapatanExport($filters), 'laporan-pendapatan-' . date('d-m-Y') . '.xlsx');
+    }
     public function printReceipt(int $id)
     {
         $transaksi = Transaksi::with(['pelanggan', 'transaksiDetails.produk'])->findOrFail($id);

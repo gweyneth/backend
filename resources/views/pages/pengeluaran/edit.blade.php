@@ -3,7 +3,7 @@
 @section('content_header')
 <div class="row mb-2">
     <div class="col-sm-6">
-        <h1 class="m-0">Edit Pengeluaran</h1>
+        <h1 class="m-0"><i class="fas fa-edit mr-2"></i>Edit Pengeluaran</h1>
     </div>
     <div class="col-sm-6">
         <ol class="breadcrumb float-sm-right">
@@ -18,18 +18,19 @@
 @section('content')
 <div class="row">
     <div class="col-md-12">
-        <div class="card">
+        <div class="card card-primary card-outline">
             <div class="card-header">
-                <h5 class="card-title">Form Edit Pengeluaran</h5>
+                <h3 class="card-title">
+                    <i class="fas fa-pencil-alt mr-2"></i>Form Edit Pengeluaran
+                </h3>
             </div>
-            <div class="card-body">
-                <form action="{{ route('pengeluaran.update', $pengeluaran->id) }}" method="POST">
-                    @csrf
-                    @method('PUT') {{-- Menggunakan method PUT untuk update --}}
-
+            <form action="{{ route('pengeluaran.update', $pengeluaran->id) }}" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="card-body">
                     <div class="form-group">
-                        <label for="jenis_pengeluaran">Jenis Pengeluaran</label>
-                        <select name="jenis_pengeluaran" id="jenis_pengeluaran" class="form-control @error('jenis_pengeluaran') is-invalid @enderror" required>
+                        <label for="jenis_pengeluaran">Jenis Pengeluaran <span class="text-danger">*</span></label>
+                        <select name="jenis_pengeluaran" id="jenis_pengeluaran" class="form-control select2 @error('jenis_pengeluaran') is-invalid @enderror" required>
                             <option value="">Pilih Jenis Pengeluaran</option>
                             <option value="Kasbon Karyawan" {{ old('jenis_pengeluaran', $pengeluaran->jenis_pengeluaran) == 'Kasbon Karyawan' ? 'selected' : '' }}>Kasbon Karyawan</option>
                             <option value="Uang Makan" {{ old('jenis_pengeluaran', $pengeluaran->jenis_pengeluaran) == 'Uang Makan' ? 'selected' : '' }}>Uang Makan</option>
@@ -49,10 +50,9 @@
                         @enderror
                     </div>
 
-                    {{-- Bagian ini akan muncul hanya jika Jenis Pengeluaran adalah 'Kasbon Karyawan' --}}
                     <div class="form-group" id="karyawan_select_group" style="display: {{ old('jenis_pengeluaran', $pengeluaran->jenis_pengeluaran) == 'Kasbon Karyawan' ? 'block' : 'none' }};">
-                        <label for="karyawan_id">Karyawan</label>
-                        <select name="karyawan_id" id="karyawan_id" class="form-control @error('karyawan_id') is-invalid @enderror">
+                        <label for="karyawan_id">Karyawan (untuk Kasbon)</label>
+                        <select name="karyawan_id" id="karyawan_id" class="form-control select2 @error('karyawan_id') is-invalid @enderror">
                             <option value="">Pilih Karyawan</option>
                             @foreach ($karyawan as $item)
                                 <option value="{{ $item->id }}" {{ old('karyawan_id', $pengeluaran->karyawan_id) == $item->id ? 'selected' : '' }}>{{ $item->nama_karyawan }} (NIK: {{ $item->nik ?? '-' }})</option>
@@ -64,38 +64,49 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="keterangan">Keterangan</label>
-                        <textarea name="keterangan" id="keterangan" class="form-control @error('keterangan') is-invalid @enderror" rows="3">{{ old('keterangan', $pengeluaran->keterangan) }}</textarea>
+                        <label for="keterangan">Keterangan <span class="text-danger">*</span></label>
+                        <textarea name="keterangan" id="keterangan" class="form-control @error('keterangan') is-invalid @enderror" rows="3" required>{{ old('keterangan', $pengeluaran->keterangan) }}</textarea>
                         @error('keterangan')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
-                    <div class="form-group">
-                        <label for="jumlah">Jumlah</label>
-                        <input type="number" name="jumlah" id="jumlah" class="form-control @error('jumlah') is-invalid @enderror" value="{{ old('jumlah', $pengeluaran->jumlah) }}" min="1" required>
-                        @error('jumlah')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="jumlah">Jumlah <span class="text-danger">*</span></label>
+                                <input type="number" name="jumlah" id="jumlah" class="form-control @error('jumlah') is-invalid @enderror" value="{{ old('jumlah', $pengeluaran->jumlah) }}" min="1" required>
+                                @error('jumlah')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="harga">Harga (per unit) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend"><span class="input-group-text">Rp</span></div>
+                                    <input type="number" name="harga" id="harga" class="form-control @error('harga') is-invalid @enderror" value="{{ old('harga', $pengeluaran->harga) }}" min="0" required>
+                                    @error('harga')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="harga">Harga (per unit)</label>
-                        <input type="number" name="harga" id="harga" class="form-control @error('harga') is-invalid @enderror" value="{{ old('harga', $pengeluaran->harga) }}" min="0" step="0.01" required>
-                        @error('harga')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+                        <label for="total">Total (Otomatis)</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend"><span class="input-group-text">Rp</span></div>
+                            <input type="text" id="total_display" class="form-control font-weight-bold" value="0" readonly>
+                            <input type="hidden" name="total" id="total" value="{{ old('total', $pengeluaran->total) }}">
+                        </div>
                     </div>
-
-                    <div class="form-group">
-                        <label for="total">Total</label>
-                        <input type="text" name="total" id="total" class="form-control" value="{{ old('total', $pengeluaran->total) }}" readonly>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary">Update Pengeluaran</button>
+                </div>
+                <div class="card-footer text-right">
                     <a href="{{ route('pengeluaran.index') }}" class="btn btn-secondary">Batal</a>
-                </form>
-            </div>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> Update Pengeluaran</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -103,16 +114,47 @@
 
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const jenisPengeluaranSelect = document.getElementById('jenis_pengeluaran');
-        const karyawanSelectGroup = document.getElementById('karyawan_select_group');
-        const jumlahInput = document.getElementById('jumlah');
-        const hargaInput = document.getElementById('harga');
-        const totalInput = document.getElementById('total');
+document.addEventListener('DOMContentLoaded', function() {
+    // Inisialisasi Select2
+    $('.select2').select2({
+        theme: 'bootstrap4'
+    });
 
-        // Fungsi untuk menghitung total
-        function calculateTotal() {
-            const jumlah = parseFloat(jumlahInput.value) || 0;
-            const harga = parseFloat(hargaInput.value) || 0;
-            const total = jumlah * harga;
-            totalInput.value = formatRupiah(tota
+    const jenisPengeluaranSelect = document.getElementById('jenis_pengeluaran');
+    const karyawanSelectGroup = document.getElementById('karyawan_select_group');
+    const jumlahInput = document.getElementById('jumlah');
+    const hargaInput = document.getElementById('harga');
+    const totalInput = document.getElementById('total');
+    const totalDisplay = document.getElementById('total_display');
+
+    function formatRupiah(angka) {
+        return new Intl.NumberFormat('id-ID').format(angka);
+    }
+
+    function calculateTotal() {
+        const jumlah = parseFloat(jumlahInput.value) || 0;
+        const harga = parseFloat(hargaInput.value) || 0;
+        const total = jumlah * harga;
+        totalDisplay.value = formatRupiah(total);
+        totalInput.value = total;
+    }
+
+    function toggleKaryawanSelect() {
+        if (jenisPengeluaranSelect.value === 'Kasbon Karyawan') {
+            karyawanSelectGroup.style.display = 'block';
+        } else {
+            karyawanSelectGroup.style.display = 'none';
+        }
+    }
+
+    // Event listeners
+    $('#jenis_pengeluaran').on('change', toggleKaryawanSelect);
+    jumlahInput.addEventListener('input', calculateTotal);
+    hargaInput.addEventListener('input', calculateTotal);
+
+    // Panggil fungsi saat halaman dimuat untuk inisialisasi
+    toggleKaryawanSelect();
+    calculateTotal();
+});
+</script>
+@endpush

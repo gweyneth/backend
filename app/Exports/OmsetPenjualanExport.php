@@ -2,87 +2,116 @@
 
 namespace App\Exports;
 
-use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
+use App\Models\TransaksiDetail; // Ganti dengan model detail transaksi Anda
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\WithTitle;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class OmsetPenjualanExport implements FromCollection, WithHeadings, ShouldAutoSize, WithTitle, WithStyles
+class OmsetPenjualanExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithColumnFormatting, WithStyles
 {
-    protected $omsetProduk;
-    protected $subtotalOmset;
-    protected $selectedMonth;
+    protected $filters;
+    private int $rowNumber = 0;
 
-    public function __construct(Collection $omsetProduk, $subtotalOmset, $selectedMonth)
+    /**
+     * @param array|\Illuminate\Support\Collection $filters Filter dari request (produk_id, bulan).
+     */
+    public function __construct($filters)
     {
-        $this->omsetProduk = $omsetProduk;
-        $this->subtotalOmset = $subtotalOmset;
-        $this->selectedMonth = $selectedMonth;
-    }
-    public function collection()
-    {
-        $data = $this->omsetProduk->map(function ($item) {
-            return [
-                $item['nama_produk'],
-                $item['jumlah'],
-                $item['total'],
-            ];
-        });
-
-        // Tambahkan baris subtotal
-        $data->push([
-            'Subtotal Omset Keseluruhan', // Kolom pertama
-            '',                           // Kolom kedua kosong
-            $this->subtotalOmset          // Total omset di kolom ketiga
-        ]);
-
-        return $data;
+        $this->filters = $filters;
     }
 
     /**
-     * Metode `headings()` akan mendefinisikan judul kolom (header) di baris pertama file Excel.
+     * Query untuk mengambil data omset penjualan produk.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function query()
+    {
+        // Asumsi: Model TransaksiDetail memiliki relasi 'produk'
+        // CATATAN: Pastikan nama kolom untuk jumlah/kuantitas sudah benar.
+        // Error sebelumnya menunjukkan kolom 'jumlah' tidak ditemukan.
+        // Saya mengubahnya menjadi 'qty'. Sesuaikan jika nama kolom Anda berbeda (misalnya: quantity, jumlah_item, dll).
+        $query = TransaksiDetail::with('produk')
+            ->selectRaw('produk_id, SUM(qty) as jumlah_terjual, SUM(total) as total_omset')
+            ->groupBy('produk_id')
+            ->orderByRaw('SUM(total) DESC');
+
+        // Filter berdasarkan produk
+        $query->when($this->filters['produk_id'] ?? null, function ($q, $produkId) {
+            if ($produkId !== 'all') {
+                return $q->where('produk_id', $produkId);
+            }
+        });
+
+        // Filter berdasarkan bulan dan tahun
+        $query->when($this->filters['bulan'] ?? null, function ($q, $bulan) {
+            // $bulan formatnya 'YYYY-MM'
+            [$year, $month] = explode('-', $bulan);
+            return $q->whereYear('created_at', $year)->whereMonth('created_at', $month);
+        });
+
+        return $query;
+    }
+
+    /**
+     * Mendefinisikan header untuk file Excel.
      *
      * @return array
      */
     public function headings(): array
     {
         return [
-            'Produk',
+            'No',
+            'Nama Produk',
             'Jumlah Terjual',
             'Total Omset',
         ];
     }
 
     /**
-     * Metode `title()` akan mengatur nama sheet di file Excel.
+     * Memetakan data untuk setiap baris di Excel.
      *
-     * @return string
+     * @param mixed $row
+     * @return array
      */
-    public function title(): string
+    public function map($row): array
     {
-        return 'Omset Penjualan ' . date('M Y', strtotime($this->selectedMonth));
+        return [
+            ++$this->rowNumber,
+            $row->produk?->nama ?? 'Produk Tidak Ditemukan',
+            $row->jumlah_terjual,
+            $row->total_omset,
+        ];
     }
 
     /**
-     * Metode `styles()` akan menerapkan styling pada sheet Excel.
-     * Membuat baris pertama (header) menjadi tebal, dan baris terakhir (subtotal) juga tebal.
+     * Menerapkan format angka pada kolom.
+     *
+     * @return array
+     */
+    public function columnFormats(): array
+    {
+        return [
+            'C' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1, // Format untuk Jumlah
+            'D' => '"Rp"#,##0', // Format Rupiah untuk Total Omset
+        ];
+    }
+
+    /**
+     * Menerapkan style pada header.
      *
      * @param Worksheet $sheet
-     * @return array
      */
     public function styles(Worksheet $sheet)
     {
-        // Mendapatkan jumlah baris data ditambah header dan subtotal
-        $lastRow = $this->omsetProduk->count() + 2; // +1 untuk header, +1 untuk subtotal
-
         return [
-            // Style the first row as bold text.
+            // Membuat header (baris 1) menjadi bold.
             1 => ['font' => ['bold' => true]],
-            // Style the last row (subtotal) as bold text.
-            $lastRow => ['font' => ['bold' => true]],
         ];
     }
 }

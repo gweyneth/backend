@@ -16,94 +16,75 @@
 
 @section('content')
 <div class="row">
-    <div class="col-md-12">
+    <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title">Daftar Pendapatan Transaksi</h5>
+                <h3 class="card-title">
+                    <i class="fas fa-file-invoice-dollar mr-1"></i>
+                    Daftar Pendapatan Transaksi
+                </h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-success btn-sm" onclick="exportExcel()">
+                        <i class="fas fa-file-excel mr-1"></i> Export Excel
+                    </button>
+                </div>
             </div>
             <div class="card-body">
-                @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('success') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                @endif
-
-                @if(session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        {{ session('error') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                @endif
-
-                {{-- Form Filter Tanggal dan Pencarian --}}
-                <form action="{{ route('pendapatan.index') }}" method="GET" class="mb-4" id="filterForm">
-                    <div class="form-row align-items-end">
-                        {{-- <div class="col-md-3 mb-2">
-                            <label for="start_date">Dari Tgl Order:</label>
-                            <input type="date" name="start_date" id="start_date" class="form-control" value="{{ old('start_date', $startDate ?? '') }}">
+                {{-- Form Filter --}}
+                <div class="mb-4">
+                    <form action="{{ route('pendapatan.index') }}" method="GET" id="filterForm">
+                        <div class="row align-items-end">
+                            <div class="col-md-auto form-group">
+                                <label for="search_query">Cari (No. Transaksi / Pelanggan)</label>
+                                <input type="text" name="search_query" id="search_query" class="form-control" placeholder="Masukkan kata kunci..." value="{{ request('search_query') }}">
+                            </div>
+                            <div class="col-md-auto form-group">
+                                <label for="start_date">Dari Tanggal</label>
+                                <input type="date" name="start_date" id="start_date" class="form-control" value="{{ request('start_date') }}">
+                            </div>
+                             <div class="col-md-auto form-group">
+                                <label for="end_date">Sampai Tanggal</label>
+                                <input type="date" name="end_date" id="end_date" class="form-control" value="{{ request('end_date') }}">
+                            </div>
+                            <div class="col-md-auto form-group">
+                                <label for="metode_pembayaran">Metode Bayar</label>
+                                <select name="metode_pembayaran" id="metode_pembayaran" class="form-control">
+                                    <option value="all">Semua</option>
+                                    <option value="tunai" {{ request('metode_pembayaran') == 'tunai' ? 'selected' : '' }}>Tunai</option>
+                                    <option value="transfer_bank" {{ request('metode_pembayaran') == 'transfer_bank' ? 'selected' : '' }}>Transfer Bank</option>
+                                </select>
+                            </div>
+                            <div class="col-md-auto form-group" id="rekening_filter_container" style="display: {{ request('metode_pembayaran') == 'transfer_bank' ? 'block' : 'none' }};">
+                                <label for="rekening_id">Bank</label>
+                                <select name="rekening_id" id="rekening_id" class="form-control">
+                                    <option value="">Semua Bank</option>
+                                    @foreach($rekening as $rek)
+                                        <option value="{{ $rek->id }}" {{ request('rekening_id') == $rek->id ? 'selected' : '' }}>
+                                            {{ $rek->bank }} ({{ $rek->nomor_rekening }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-auto form-group">
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-filter mr-1"></i> Filter</button>
+                                <a href="{{ route('pendapatan.index') }}" class="btn btn-secondary"><i class="fas fa-sync-alt"></i></a>
+                            </div>
                         </div>
-                        <div class="col-md-3 mb-2">
-                            <label for="end_date">Sampai Tgl Order:</label>
-                            <input type="date" name="end_date" id="end_date" class="form-control" value="{{ old('end_date', $endDate ?? '') }}">
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <label for="tanggal_bayar_start">Dari Tgl Bayar:</label>
-                            <input type="date" name="tanggal_bayar_start" id="tanggal_bayar_start" class="form-control" value="{{ old('tanggal_bayar_start', $tanggalBayarStart ?? '') }}">
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <label for="tanggal_bayar_end">Sampai Tgl Bayar:</label>
-                            <input type="date" name="tanggal_bayar_end" id="tanggal_bayar_end" class="form-control" value="{{ old('tanggal_bayar_end', $tanggalBayarEnd ?? '') }}">
-                        </div> --}}
-                        <div class="col-md-2 mb-2">
-                            <label for="metode_pembayaran">Jenis Pembayaran:</label>
-                            <select name="metode_pembayaran" id="metode_pembayaran" class="form-control">
-                                <option value="all" {{ old('metode_pembayaran', $metodePembayaran ?? '') == 'all' ? 'selected' : '' }}>Semua</option>
-                                <option value="tunai" {{ old('metode_pembayaran', $metodePembayaran ?? '') == 'tunai' ? 'selected' : '' }}>Tunai</option>
-                                <option value="transfer_bank" {{ old('metode_pembayaran', $metodePembayaran ?? '') == 'transfer_bank' ? 'selected' : '' }}>Transfer Bank</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2 mb-2">
-                            <label for="rekening_id">Bank:</label>
-                            <select name="rekening_id" id="rekening_id" class="form-control">
-                                <option value="">Semua Bank</option>
-                                @foreach($rekening as $rek)
-                                    <option value="{{ $rek->id }}" {{ old('rekening_id', $rekeningId ?? '') == $rek->id ? 'selected' : '' }}>
-                                        {{ $rek->bank }} ({{ $rek->nomor_rekening }})
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-2">
-                            <label for="search_query">Cari Pelanggan / No. Transaksi:</label>
-                            <input type="text" name="search_query" id="search_query" class="form-control" placeholder="Nama Pelanggan atau No. Transaksi" value="{{ old('search_query', $searchQuery ?? '') }}">
-                        </div>
-                        <div class="col-md-4 mb-2">
-                            <button type="submit" class="btn btn-info"><i class="fas fa-search"></i> Cari</button>
-                            <a href="{{ route('pendapatan.index') }}" class="btn btn-secondary"><i class="fas fa-sync-alt"></i> Reset</a>
-                            <button type="button" class="btn btn-danger" onclick="printPdf()"><i class="fas fa-file-pdf"></i> Cetak PDF</button>
-                        </div>
-                    </div>
-                </form>
-
+                    </form>
+                </div>
                 <div class="table-responsive">
-                    <table class="table table-bordered table-striped">
-                        <thead>
+                    <table class="table table-bordered table-striped table-hover">
+                        <thead class="thead-light">
                             <tr>
-                                <th style="width: 50px;">No</th>
+                                <th>No</th>
                                 <th>No. Transaksi</th>
-                                <th>Tanggal Order</th>
-                                <th>Nama Pelanggan</th>
-                                <th>Tanggal Bayar (Terakhir)</th>
-                                <th>Jenis Pembayaran</th>
-                                <th>Bank (Jika Transfer)</th>
-                                <th>Lampiran (Bukti Bayar)</th>
-                                <th>Jumlah Uang Muka</th>
-                                <th>Total Bayar</th>
+                                <th>Pelanggan</th>
+                                <th>Tgl. Bayar</th>
+                                <th>Metode Bayar</th>
+                                <th>Bank</th>
+                                <th>Jumlah Dibayar</th>
+                                <th>Total Transaksi</th>
+                                {{-- <th>Aksi</th> --}}
                             </tr>
                         </thead>
                         <tbody>
@@ -111,31 +92,29 @@
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
                                 <td>{{ $item->no_transaksi }}</td>
-                                <td>{{ $item->tanggal_order->format('d/m/Y') }}</td>
                                 <td>{{ $item->pelanggan->nama ?? 'Umum' }}</td>
-                                <td>{{ $item->updated_at->format('d/m/Y H:i') }}</td> {{-- Menggunakan updated_at sebagai tanggal bayar terakhir --}}
+                                <td>{{ $item->updated_at->format('d M Y') }}</td>
                                 <td>{{ ucwords(str_replace('_', ' ', $item->metode_pembayaran ?? '-')) }}</td>
                                 <td>{{ $item->rekening->bank ?? '-' }}</td>
-                                <td>
+                                <td>Rp{{ number_format($item->uang_muka, 0, ',', '.') }}</td>
+                                <td class="font-weight-bold">Rp{{ number_format($item->total, 0, ',', '.') }}</td>
+                                {{-- <td>
                                     @if ($item->bukti_pembayaran)
-                                        <a href="{{ asset('storage/' . $item->bukti_pembayaran) }}" target="_blank" class="btn btn-sm btn-info">Lihat Bukti</a>
-                                    @else
-                                        -
-                                    @endif
-                                </td>
-                                <td>Rp{{ number_format($item->uang_muka, 2, ',', '.') }}</td> {{-- Menampilkan uang muka sebagai jumlah yang dibayar --}}
-                                <td>Rp{{ number_format($item->total, 2, ',', '.') }}</td> {{-- Menampilkan uang muka sebagai jumlah yang dibayar --}}
+                                        <a href="{{ asset('storage/' . $item->bukti_pembayaran) }}" target="_blank" class="btn btn-sm btn-secondary" title="Lihat Bukti Bayar"><i class="fas fa-receipt"></i></a>
+                                    @endif --}}
+                                    {{-- <a href="{{ route('transaksi.show', $item->id) }}" class="btn btn-info btn-sm" title="Lihat Detail Transaksi"><i class="fas fa-eye"></i></a> --}}
+                                {{-- </td> --}}
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="10" class="text-center">Tidak ada data pendapatan sesuai filter.</td>
+                                <td colspan="9" class="text-center">Tidak ada data pendapatan sesuai filter.</td>
                             </tr>
                             @endforelse
                         </tbody>
                         <tfoot>
                             <tr>
-                                <th colspan="9" class="text-right">Total Keseluruhan Pendapatan:</th>
-                                <th>Rp{{ number_format($totalPendapatan, 2, ',', '.') }}</th>
+                                <th colspan="7" class="text-right">Total Keseluruhan Pendapatan:</th>
+                                <th colspan="2">Rp{{ number_format($totalPendapatan, 0, ',', '.') }}</th>
                             </tr>
                         </tfoot>
                     </table>
@@ -147,12 +126,22 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    function printPdf() {
+    function exportExcel() {
         const form = document.getElementById('filterForm');
         const queryString = new URLSearchParams(new FormData(form)).toString();
-        window.open(`{{ route('pendapatan.print-pdf') }}?${queryString}`, '_blank');
+        // Pastikan Anda membuat route 'pendapatan.export-excel'
+        window.open(`{{ route('pendapatan.export-excel') }}?${queryString}`, '_blank');
     }
+
+    document.getElementById('metode_pembayaran').addEventListener('change', function() {
+        const rekeningFilter = document.getElementById('rekening_filter_container');
+        if (this.value === 'transfer_bank') {
+            rekeningFilter.style.display = 'block';
+        } else {
+            rekeningFilter.style.display = 'none';
+            document.getElementById('rekening_id').value = ''; // Reset pilihan bank
+        }
+    });
 </script>
 @endpush
