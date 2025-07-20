@@ -45,6 +45,7 @@ class ProdukController extends Controller
         $bahans = Bahan::all();
         $kategoriBarangs = KategoriBarang::all();
         $satuans = Satuan::all();
+        $nextKodeProduk = $this->generateNextKodeProduk();
         // $nextKodeProduk = $this->generateNextKodeProduk(); // Generate kode otomatis
 
         return view('pages.produk.create', compact('bahans', 'kategoriBarangs', 'satuans', 'nextKodeProduk'));
