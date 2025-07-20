@@ -20,7 +20,6 @@ class Transaksi extends Model
         'diskon',
         'sisa',
         'uang_muka',
-        'id_pelunasan',
         'status_pengerjaan',
         'metode_pembayaran',
         'bukti_pembayaran',

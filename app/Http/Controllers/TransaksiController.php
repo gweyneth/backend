@@ -364,15 +364,20 @@ class TransaksiController extends Controller
 
     public function destroy(int $id)
     {
-        $transaksi = Transaksi::findOrFail($id);
-        if ($transaksi->bukti_pembayaran && Storage::disk('public')->exists($transaksi->bukti_pembayaran)) {
-            Storage::disk('public')->delete($transaksi->bukti_pembayaran);
+        try {
+            $transaksi = Transaksi::findOrFail($id);
+            if ($transaksi->bukti_pembayaran && Storage::disk('public')->exists($transaksi->bukti_pembayaran)) {
+                Storage::disk('public')->delete($transaksi->bukti_pembayaran);
+            }
+            $transaksi->transaksiDetails()->delete();
+            $transaksi->delete();
+            return response()->json(['success' => 'Transaksi berhasil dihapus!']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Gagal menghapus. Transaksi ini mungkin terkait dengan data lain.'], 500);
         }
-        $transaksi->transaksiDetails()->delete();
-        $transaksi->delete();
-
-        return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil dihapus!');
     }
+
+   
 
     public function getProductDetails(Request $request)
     {
