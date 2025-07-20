@@ -18,53 +18,54 @@ use App\Exports\PendapatanExport;
 
 class TransaksiController extends Controller
 {
-   
     public function index(Request $request)
     {
-        $query = Transaksi::with(['pelanggan'])->latest();
-
         $limit = $request->input('limit', 10);
-
+        $searchQuery = $request->input('search_query');
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
+        $query = Transaksi::with(['pelanggan'])->latest();
+
+        // Terapkan filter
+        if ($searchQuery) {
+            $query->where(function ($q) use ($searchQuery) {
+                $q->where('no_transaksi', 'like', '%' . $searchQuery . '%')
+                  ->orWhereHas('pelanggan', function ($subq) use ($searchQuery) {
+                      $subq->where('nama', 'like', '%' . $searchQuery . '%');
+                  });
+            });
+        }
         if ($startDate) {
             $query->whereDate('tanggal_order', '>=', $startDate);
         }
-
         if ($endDate) {
             $query->whereDate('tanggal_order', '<=', $endDate);
         }
 
-        $searchQuery = $request->input('search_query');
-        if ($searchQuery) {
-            $query->whereHas('pelanggan', function ($q) use ($searchQuery) {
-                $q->where('nama', 'like', '%' . $searchQuery . '%');
-            })->orWhere('no_transaksi', 'like', '%' . $searchQuery . '%');
-        }
-        $transaksi = $query->latest()->paginate($limit);
-        $totalTransaksi = $transaksi->sum('total');
-        $transaksi = $query->get();
+        // Hitung total sebelum paginasi
+        $totalKeseluruhanTransaksi = $query->clone()->sum('total');
+        $totalPiutang = $query->clone()->sum('sisa');
 
-        $totalUangMuka = $transaksi->sum('uang_muka');
-        $totalPiutang = $transaksi->sum('sisa');
-        $totalKeseluruhanTransaksi = $transaksi->sum('total');
-
+        $transaksi = $query->paginate($limit);
+        
+        // Data untuk modal pelunasan
         $rekening = Rekening::all();
         $perusahaan = Perusahaan::first();
 
         return view('pages.transaksi.index', compact(
-            'transaksi',
-            'totalUangMuka',
-            'totalPiutang',
-            'totalKeseluruhanTransaksi',
-            'startDate',
-            'endDate',
-            'searchQuery',
-            'rekening' ,
-            'perusahaan'
+            'transaksi', 
+            'totalKeseluruhanTransaksi', 
+            'totalPiutang', 
+            'rekening', 
+            'perusahaan',
+            'searchQuery', 
+            'startDate', 
+            'endDate', 
+            'limit'
         ));
     }
+
 
     public function create()
     {
