@@ -62,6 +62,7 @@
                                 <th>Kategori</th>
                                 <th>Satuan</th>
                                 <th>Stok</th>
+                                <th>Harga Beli</th>
                                 <th>Harga Jual</th>
                                 <th style="width: 15%;" class="text-center">Aksi</th>
                             </tr>
@@ -77,6 +78,7 @@
                                 <td>{{ $produk->kategori->nama ?? 'N/A' }}</td>
                                 <td>{{ $produk->satuan->nama ?? 'N/A' }}</td>
                                 <td>{{ $produk->jumlah }}</td>
+                                <td>Rp {{ number_format($produk->harga_beli, 0, ',', '.') }}</td>
                                 <td>Rp {{ number_format($produk->harga_jual, 0, ',', '.') }}</td>
                                 <td class="text-center">
                                     <div class="btn-group" role="group">
