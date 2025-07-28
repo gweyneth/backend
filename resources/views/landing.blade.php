@@ -96,13 +96,28 @@
 
             <div class="row g-5 mb-5">
                 <div class="col-lg-4">
-                    <div class="mb-4 footer-logo-wrap"><a href="#" class="footer-logo">{{ $perusahaan->nama_perusahaan ?? 'Digital Printing' }}<span>.</span></a></div>
-                    <p class="mb-4">Kami adalah partner terpercaya untuk semua kebutuhan cetak Anda. Menyediakan solusi cetak berkualitas tinggi untuk membantu mempromosikan dan mengembangkan bisnis Anda.</p>
+                    <div class="mb-4 footer-logo-wrap"><a href="#"
+                            class="footer-logo">{{ $perusahaan->nama_perusahaan ?? 'Digital Printing' }}<span>.</span></a>
+                    </div>
+                    <p class="mb-4">Kami adalah partner terpercaya untuk semua kebutuhan cetak Anda. Menyediakan
+                        solusi cetak berkualitas tinggi untuk membantu mempromosikan dan mengembangkan bisnis Anda.</p>
                     <ul class="list-unstyled custom-social">
-                        @if($perusahaan && $perusahaan->facebook)<li><a href="https://facebook.com/{{ $perusahaan->facebook }}" target="_blank"><span class="fa fa-brands fa-facebook-f"></span></a></li>@endif
-                        @if($perusahaan && $perusahaan->twitter)<li><a href="https://twitter.com/{{ $perusahaan->twitter }}" target="_blank"><span class="fa fa-brands fa-twitter"></span></a></li>@endif
-                        @if($perusahaan && $perusahaan->instagram)<li><a href="https://instagram.com/{{ $perusahaan->instagram }}" target="_blank"><span class="fa fa-brands fa-instagram"></span></a></li>@endif
-                        @if($perusahaan && $perusahaan->youtube)<li><a href="{{ $perusahaan->youtube }}" target="_blank"><span class="fa fa-brands fa-youtube"></span></a></li>@endif
+                        @if ($perusahaan && $perusahaan->facebook)
+                            <li><a href="https://facebook.com/{{ $perusahaan->facebook }}" target="_blank"><span
+                                        class="fa fa-brands fa-facebook-f"></span></a></li>
+                        @endif
+                        @if ($perusahaan && $perusahaan->twitter)
+                            <li><a href="https://twitter.com/{{ $perusahaan->twitter }}" target="_blank"><span
+                                        class="fa fa-brands fa-twitter"></span></a></li>
+                        @endif
+                        @if ($perusahaan && $perusahaan->instagram)
+                            <li><a href="https://instagram.com/{{ $perusahaan->instagram }}" target="_blank"><span
+                                        class="fa fa-brands fa-instagram"></span></a></li>
+                        @endif
+                        @if ($perusahaan && $perusahaan->youtube)
+                            <li><a href="{{ $perusahaan->youtube }}" target="_blank"><span
+                                        class="fa fa-brands fa-youtube"></span></a></li>
+                        @endif
                     </ul>
                 </div>
 

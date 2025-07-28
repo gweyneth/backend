@@ -22,6 +22,7 @@ public function beranda()
      $testimonials = Testimonial::where('is_enabled', true)->latest()->get();
      $posts = Post::with('user')->where('status', 'published')->latest()->take(3)->get();
      $heroBackground = Background::where('section_name', 'hero')->where('is_active', true)->first();
+
      return view('interface.beranda', compact('perusahaan', 'produks', 'testimonials', 'posts', 'heroBackground'));
 }
 
@@ -50,7 +51,7 @@ public function beranda()
         $perusahaan = Perusahaan::first();
         $post = Post::where('slug', $slug)->where('status', 'published')->firstOrFail();
 
-        return view('interface.blog-show', compact('perusahaan', 'post', 'heroBackground'));
+        return view('interface.blog-show', compact('perusahaan', 'post'));
     }
 
     public function about()
