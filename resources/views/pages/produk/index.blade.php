@@ -58,6 +58,7 @@
                         <thead class="thead-light">
                             <tr>
                                 <th style="width: 5%;">No</th>
+                                <th style="width: 10%;">Foto</th>
                                 <th>Nama Produk</th>
                                 <th>Kategori</th>
                                 <th>Satuan</th>
@@ -71,6 +72,9 @@
                             @forelse ($produks as $produk)
                             <tr id="produk-row-{{ $produk->id }}">
                                 <td>{{ $loop->iteration + ($produks->currentPage() - 1) * $produks->perPage() }}</td>
+                                <td class="text-center">
+                                    <img src="{{ $produk->foto ? asset('storage/' . $produk->foto) : 'https://placehold.co/50x50/cccccc/333333?text=N/A' }}" alt="{{ $produk->nama }}" class="img-circle" style="width: 50px; height: 50px; object-fit: cover;">
+                                </td>
                                 <td>
                                     <strong>{{ $produk->nama }}</strong>
                                     <small class="d-block text-muted">Kode: {{ $produk->kode }}</small>
@@ -96,7 +100,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="7" class="text-center">Tidak ada data produk ditemukan.</td>
+                                <td colspan="9" class="text-center">Tidak ada data produk ditemukan.</td>
                             </tr>
                             @endforelse
                         </tbody>

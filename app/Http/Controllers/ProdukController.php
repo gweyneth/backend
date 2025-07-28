@@ -7,6 +7,7 @@ use App\Models\Bahan;
 use App\Models\KategoriBarang;
 use App\Models\Satuan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ProdukController extends Controller
@@ -16,9 +17,8 @@ class ProdukController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Produk::with(['bahan', 'kategori', 'satuan'])->latest();
+        $query = Produk::with(['kategori'])->latest();
 
-        // Filter berdasarkan pencarian nama atau kode
         if ($request->has('search_query') && $request->search_query) {
             $query->where(function ($q) use ($request) {
                 $q->where('nama', 'like', '%' . $request->search_query . '%')
@@ -26,13 +26,12 @@ class ProdukController extends Controller
             });
         }
 
-        // Filter berdasarkan kategori
         if ($request->has('kategori_id') && $request->kategori_id) {
             $query->where('kategori_id', $request->kategori_id);
         }
 
-        $produks = $query->paginate(10); // Menggunakan paginasi
-        $kategoriBarangs = KategoriBarang::all(); // Untuk dropdown filter
+        $produks = $query->paginate(10);
+        $kategoriBarangs = KategoriBarang::all();
 
         return view('pages.produk.index', compact('produks', 'kategoriBarangs'));
     }
@@ -46,7 +45,6 @@ class ProdukController extends Controller
         $kategoriBarangs = KategoriBarang::all();
         $satuans = Satuan::all();
         $nextKodeProduk = $this->generateNextKodeProduk();
-        // $nextKodeProduk = $this->generateNextKodeProduk(); // Generate kode otomatis
 
         return view('pages.produk.create', compact('bahans', 'kategoriBarangs', 'satuans', 'nextKodeProduk'));
     }
@@ -56,9 +54,12 @@ class ProdukController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        // PERBAIKAN: Menyesuaikan nama tabel di aturan validasi
+        $validatedData = $request->validate([
             'nama' => 'required|string|max:255',
-            'kode' => 'required|string|unique:produk,kode', // Validasi kode unik
+            'kode' => 'required|string|unique:produk,kode',
+            'deskripsi' => 'nullable|string',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'bahan_id' => 'required|exists:bahan,id',
             'ukuran' => 'nullable|string|max:100',
             'jumlah' => 'required|integer|min:0',
@@ -70,12 +71,13 @@ class ProdukController extends Controller
             'harga_jual.gte' => 'Harga jual tidak boleh lebih rendah dari harga beli.',
         ]);
 
-        try {
-            Produk::create($request->all());
-            return redirect()->route('produk.index')->with('success', 'Data produk berhasil ditambahkan.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Terjadi kesalahan saat menambahkan produk.')->withInput();
+        if ($request->hasFile('foto')) {
+            $validatedData['foto'] = $request->file('foto')->store('produk_foto', 'public');
         }
+
+        // PERBAIKAN: Menggunakan $validatedData untuk membuat produk
+        Produk::create($validatedData);
+        return redirect()->route('produk.index')->with('success', 'Data produk berhasil ditambahkan.');
     }
 
     /**
@@ -83,10 +85,7 @@ class ProdukController extends Controller
      */
     public function show(string $id)
     {
-        $produk = Produk::with(['bahan', 'kategori', 'satuan'])->find($id);
-        if (!$produk) {
-            return response()->json(['message' => 'Produk tidak ditemukan.'], 404);
-        }
+        $produk = Produk::with(['bahan', 'kategori', 'satuan'])->findOrFail($id);
         return response()->json($produk);
     }
 
@@ -110,8 +109,11 @@ class ProdukController extends Controller
     {
         $produk = Produk::findOrFail($id);
 
-        $request->validate([
+        // PERBAIKAN: Menyesuaikan nama tabel di aturan validasi
+        $validatedData = $request->validate([
             'nama' => 'required|string|max:255',
+            'deskripsi' => 'nullable|string',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'bahan_id' => 'required|exists:bahan,id',
             'ukuran' => 'nullable|string|max:100',
             'jumlah' => 'required|integer|min:0',
@@ -121,32 +123,35 @@ class ProdukController extends Controller
             'satuan_id' => 'required|exists:satuan,id',
         ]);
 
-        try {
-            $produk->update($request->except('kode')); // Kode tidak diupdate
-            return redirect()->route('produk.index')->with('success', 'Data produk berhasil diperbarui.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Terjadi kesalahan saat memperbarui produk.')->withInput();
+        if ($request->hasFile('foto')) {
+            if ($produk->foto && Storage::disk('public')->exists($produk->foto)) {
+                Storage::disk('public')->delete($produk->foto);
+            }
+            $validatedData['foto'] = $request->file('foto')->store('produk_foto', 'public');
         }
+
+        // PERBAIKAN: Menggunakan $validatedData untuk update
+        $produk->update($validatedData);
+        return redirect()->route('produk.index')->with('success', 'Data produk berhasil diperbarui.');
     }
 
     /**
-     * Menghapus produk dari database (untuk AJAX).
+     * Menghapus produk dari database.
      */
     public function destroy(string $id)
     {
         try {
             $produk = Produk::findOrFail($id);
+            if ($produk->foto && Storage::disk('public')->exists($produk->foto)) {
+                Storage::disk('public')->delete($produk->foto);
+            }
             $produk->delete();
             return response()->json(['success' => 'Data produk berhasil dihapus.']);
         } catch (\Exception $e) {
-            // Menangani error jika produk terkait dengan data lain (misal: transaksi)
             return response()->json(['error' => 'Gagal menghapus. Produk ini mungkin terkait dengan data lain.'], 500);
         }
     }
 
-    /**
-     * Menghasilkan kode produk unik berikutnya.
-     */
     private function generateNextKodeProduk()
     {
         $latestProduk = Produk::latest('id')->first();

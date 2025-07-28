@@ -1,9 +1,10 @@
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <a href="{{ url('/dashboard') }}" class="brand-link">
         {{-- Menampilkan logo perusahaan dari data perusahaan atau placeholder --}}
-        <img src="{{ isset($perusahaan) && $perusahaan->logo ? asset('storage/' . $perusahaan->logo) : asset('dist/img/AdminLTELogo.png') }}" alt="Logo Perusahaan" class="brand-image img-circle elevation-3"
-            style="opacity: .8">
-        <span class="brand-text font-weight-light">{{ isset($perusahaan) ? $perusahaan->nama_perusahaan : 'Digital Printing' }}</span>
+        <img src="{{ isset($perusahaan) && $perusahaan->logo ? asset('storage/' . $perusahaan->logo) : asset('dist/img/AdminLTELogo.png') }}"
+            alt="Logo Perusahaan" class="brand-image img-circle elevation-3" style="opacity: .8">
+        <span
+            class="brand-text font-weight-light">{{ isset($perusahaan) ? $perusahaan->nama_perusahaan : 'Digital Printing' }}</span>
     </a>
     <div class="sidebar">
         <div class="user-panel mt-3 pb-3 mb-3 d-flex">
@@ -186,6 +187,20 @@
                             </li>
                         </ul>
                     </li>
+                    <li class="nav-item">
+                        <a href="{{ route('posts.index') }}"
+                            class="nav-link {{ Request::is('posts*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-blog"></i>
+                            <p>Blog</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('testimonials.index') }}"
+                            class="nav-link {{ Request::is('testimonials*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-comment-dots"></i>
+                            <p>Testimoni</p>
+                        </a>
+                    </li>
                     <li class="nav-item has-treeview {{ Request::is('rekening*') ? 'menu-open' : '' }}">
                         <a href="#" class="nav-link {{ Request::is('rekening*') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-cogs"></i>
@@ -202,19 +217,28 @@
                                     <p>Data Rekening</p>
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a href="{{ route('backgrounds.index') }}"
+                                    class="nav-link {{ Request::is('backgrounds*') ? 'active' : '' }}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Pengaturan Tampilan</p>
+                                </a>
+                            </li>
                         </ul>
                     </li>
-                @endif 
+                @endif
                 <li class="nav-header">AKUN</li>
                 <li class="nav-item">
-                    <a href="{{ route('profile.show') }}" class="nav-link {{ Request::is('profile*') ? 'active' : '' }}">
+                    <a href="{{ route('profile.show') }}"
+                        class="nav-link {{ Request::is('profile*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-user-circle"></i>
                         <p>Akun Saya</p>
                     </a>
                 </li>
                 <li class="nav-item">
                     {{-- PERBAIKAN: Link ini sekarang memanggil fungsi logout yang sama dengan di navbar --}}
-                    <a href="{{ route('logout') }}" class="nav-link" onclick="event.preventDefault(); confirmLogoutNavbar(event);">
+                    <a href="{{ route('logout') }}" class="nav-link"
+                        onclick="event.preventDefault(); confirmLogoutNavbar(event);">
                         <i class="nav-icon fas fa-sign-out-alt"></i>
                         <p>Logout</p>
                     </a>

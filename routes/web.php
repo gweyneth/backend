@@ -17,8 +17,23 @@ use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\PelangganController;
 use App\Http\Controllers\OmsetPenjualanController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\InterfaceController;
+use App\Http\Controllers\PostController;
+use App\Http\Controllers\TestimonialController;
+use App\Http\Controllers\BackgroundController;
 
-Route::get('/', function () {
+Route::get('/', [InterfaceController::class, 'beranda'])->name('beranda');
+Route::get('/shop', [InterfaceController::class, 'shop'])->name('shop');
+Route::get('/blog', [InterfaceController::class, 'blogIndex'])->name('blog.index');
+Route::get('/blog/{slug}', [InterfaceController::class, 'blogShow'])->name('blog.show');
+Route::get('/about', [InterfaceController::class, 'about'])->name('about');
+Route::get('/services', [InterfaceController::class, 'services'])->name('services');
+Route::get('/contact', [InterfaceController::class, 'contact'])->name('contact');
+Route::get('/testimonialsIndex', [InterfaceController::class, 'testimonialsIndex'])->name('testimonialsIndex');
+Route::post('/testimonials', [InterfaceController::class, 'storeTestimonial'])->name('testimonials.store');
+
+
+Route::get('/login', function () {
     return redirect()->route('login');
 });
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -48,6 +63,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('omset-penjualan', [OmsetPenjualanController::class, 'index'])->name('omset.index');
         Route::get('omset-penjualan/export-excel', [OmsetPenjualanController::class, 'exportExcel'])->name('omset.export-excel');
         Route::get('/pendapatan/export-excel', [TransaksiController::class, 'exportExcelPendapatan'])->name('pendapatan.export-excel');
+        Route::get('/testimonials', [TestimonialController::class, 'index'])->name('testimonials.index');
+        Route::patch('/testimonials/{testimonial}/toggle', [TestimonialController::class, 'toggleStatus'])->name('testimonials.toggle');
+        Route::delete('/testimonials/{testimonial}', [TestimonialController::class, 'destroy'])->name('testimonials.destroy');
+        Route::get('/backgrounds', [BackgroundController::class, 'index'])->name('backgrounds.index');
+        Route::post('/backgrounds', [BackgroundController::class, 'store'])->name('backgrounds.store');
+        Route::patch('/backgrounds/{background}/set-active', [BackgroundController::class, 'setActive'])->name('backgrounds.set_active');
+        Route::delete('/backgrounds/{background}', [BackgroundController::class, 'destroy'])->name('backgrounds.destroy');
     });
 
     Route::prefix('profile')->name('profile.')->group(function () {
@@ -67,5 +89,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('transaksi/{id}/print-invoice', [TransaksiController::class, 'printInvoice'])->name('transaksi.print-invoice');
         Route::get('transaksi/export-excel', [TransaksiController::class, 'exportExcel'])->name('transaksi.export-excel');
         Route::resource('transaksi', TransaksiController::class);
+        Route::patch('/posts/{post}/publish', [PostController::class, 'publish'])->name('posts.publish');
+        Route::resource('posts', PostController::class);
     });
 });

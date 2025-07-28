@@ -127,8 +127,39 @@
                                         <label for="instagram">Instagram</label>
                                         <div class="input-group">
                                             <div class="input-group-prepend"><span class="input-group-text"><i class="fab fa-instagram"></i></span></div>
-                                            <input type="text" name="instagram" id="instagram" class="form-control @error('instagram') is-invalid @enderror" value="{{ old('instagram', $perusahaan->instagram) }}" placeholder="Username Instagram tanpa '@'">
+                                            <input type="text" name="instagram" id="instagram" class="form-control @error('instagram') is-invalid @enderror" value="{{ old('instagram', $perusahaan->instagram) }}" placeholder="Username tanpa '@'">
                                             @error('instagram')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                        </div>
+                                    </div>
+                                </div>
+                                {{-- PERBAIKAN: Mengubah input menjadi username saja --}}
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="facebook">Facebook</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend"><span class="input-group-text"><i class="fab fa-facebook-f"></i></span></div>
+                                            <input type="text" name="facebook" id="facebook" class="form-control @error('facebook') is-invalid @enderror" value="{{ old('facebook', $perusahaan->facebook) }}" placeholder="Username Facebook">
+                                            @error('facebook')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="twitter">Twitter</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend"><span class="input-group-text"><i class="fab fa-twitter"></i></span></div>
+                                            <input type="text" name="twitter" id="twitter" class="form-control @error('twitter') is-invalid @enderror" value="{{ old('twitter', $perusahaan->twitter) }}" placeholder="Username Twitter tanpa '@'">
+                                            @error('twitter')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="youtube">YouTube</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend"><span class="input-group-text"><i class="fab fa-youtube"></i></span></div>
+                                            <input type="text" name="youtube" id="youtube" class="form-control @error('youtube') is-invalid @enderror" value="{{ old('youtube', $perusahaan->youtube) }}" placeholder="Nama Channel YouTube">
+                                            @error('youtube')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                         </div>
                                     </div>
                                 </div>
