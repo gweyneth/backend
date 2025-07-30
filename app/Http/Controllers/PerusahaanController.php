@@ -36,6 +36,7 @@ class PerusahaanController extends Controller
             'facebook' => 'nullable|string|max:255',
             'twitter' => 'nullable|string|max:255',
             'youtube' => 'nullable|string|max:255',
+            'maps_url' => 'nullable|string',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5120',
             'favicon' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5120',
             'logo_login' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5120',

@@ -170,6 +170,16 @@
                                         @error('alamat')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                     </div>
                                 </div>
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="maps_url">Link Sematan Google Maps</label>
+                                        <textarea name="maps_url" id="maps_url" class="form-control @error('maps_url') is-invalid @enderror" rows="4" placeholder="Contoh: <iframe src=... ></iframe>">{{ old('maps_url', $perusahaan->maps_url) }}</textarea>
+                                        @error('maps_url')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                        <small class="form-text text-muted">
+                                            Buka Google Maps > Cari lokasi Anda > Klik "Share" > Pilih "Embed a map" > Salin kode HTML dan tempel di sini.
+                                        </small>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

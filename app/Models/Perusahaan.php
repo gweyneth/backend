@@ -21,6 +21,7 @@ class Perusahaan extends Model
         'facebook', 
         'twitter', 
         'youtube',
+        'maps_url',
         'logo',
         'favicon',
         'logo_login',

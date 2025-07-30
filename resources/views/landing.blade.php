@@ -31,6 +31,24 @@
         .hero .intro-excerpt p {
             color: rgba(255, 255, 255, 0.8);
         }
+
+        .map-container {
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        padding-top: 50%; /* Rasio aspek 4:3 (tinggi adalah 75% dari lebar) */
+        border-radius: 8px;
+    }
+    .map-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+    }
     </style>
 </head>
 
@@ -139,6 +157,13 @@
                                 <li><a href="{{ route('shop') }}">Brosur & Flyer</a></li>
                                 <li><a href="{{ route('shop') }}">Stiker</a></li>
                             </ul>
+                        </div>
+                        <div class="col-6 col-md-6">
+                            @if ($perusahaan && $perusahaan->maps_url)
+                                <div class="map-container">
+                                    {!! $perusahaan->maps_url !!}
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>

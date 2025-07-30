@@ -145,7 +145,7 @@
                                 @forelse ($recentTransactions as $transaction)
                                 <tr>
                                     <td>
-                                        <a href="{{ route('transaksi.show', $transaction->id) }}">{{ $transaction->no_transaksi }}</a>
+                                        <a href="{{ route('transaksi.edit', $transaction->id) }}">{{ $transaction->no_transaksi }}</a>
                                         <small class="d-block text-muted">{{ $transaction->pelanggan->nama ?? 'Umum' }}</small>
                                     </td>
                                     <td class="text-right">

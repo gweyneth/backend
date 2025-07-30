@@ -22,25 +22,6 @@
                 <h5 class="card-title">Edit Transaksi #{{ $transaksi->no_transaksi }}</h5>
             </div>
             <div class="card-body">
-                {{-- Menampilkan pesan sukses --}}
-                @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('success') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                @endif
-
-                {{-- Menampilkan pesan error umum --}}
-                @if(session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        {{ session('error') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                @endif
 
                 <form action="{{ route('transaksi.update', $transaksi->id) }}" method="POST" id="transaksi-form">
                     @csrf
@@ -49,7 +30,7 @@
 
                     <div class="row">
                         {{-- Kolom Kiri: Detail Transaksi Utama --}}
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <label for="pelanggan_id">Nama Pemesan</label>
                                 <select name="pelanggan_id" id="pelanggan_id" class="form-control @error('pelanggan_id') is-invalid @enderror">
@@ -95,7 +76,7 @@
                         </div>
 
                         {{-- Kolom Kanan: Detail Produk Transaksi --}}
-                        <div class="col-md-6">
+                        <div class="col-md-9">
                             <h6>Detail Produk</h6>
                             <div id="produk-items-container">
                                 {{-- Loop melalui detail transaksi yang sudah ada --}}

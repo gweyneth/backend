@@ -22,29 +22,12 @@
                 <h5 class="card-title">Transaksi Baru #{{ $nextNoTransaksi }}</h5>
             </div>
             <div class="card-body">
-                @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('success') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                @endif
-                @if(session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        {{ session('error') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                @endif
-
                 <form action="{{ route('transaksi.store') }}" method="POST" id="transaksi-form">
                     @csrf
                     <input type="hidden" name="no_transaksi" value="{{ $nextNoTransaksi }}">
 
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <label for="pelanggan_id">Nama Pemesan</label>
                                 <select name="pelanggan_id" id="pelanggan_id" class="form-control @error('pelanggan_id') is-invalid @enderror">
@@ -86,7 +69,7 @@
                             </div>
                         </div>
 
-                        <div class="col-md-8">
+                        <div class="col-md-9">
                             <h6>Detail Produk</h6>
                             <div id="produk-items-container">
                                 @include('pages.transaksi.produk_item_row', ['index' => 0, 'produks' => $produks])
