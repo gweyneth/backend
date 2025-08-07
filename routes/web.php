@@ -17,23 +17,11 @@ use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\PelangganController;
 use App\Http\Controllers\OmsetPenjualanController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\InterfaceController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\TestimonialController;
 use App\Http\Controllers\BackgroundController;
 
-Route::get('/', [InterfaceController::class, 'beranda'])->name('beranda');
-Route::get('/shop', [InterfaceController::class, 'shop'])->name('shop');
-Route::get('/blog', [InterfaceController::class, 'blogIndex'])->name('blog.index');
-Route::get('/blog/{slug}', [InterfaceController::class, 'blogShow'])->name('blog.show');
-Route::get('/about', [InterfaceController::class, 'about'])->name('about');
-Route::get('/services', [InterfaceController::class, 'services'])->name('services');
-Route::get('/contact', [InterfaceController::class, 'contact'])->name('contact');
-Route::get('/testimonialsIndex', [InterfaceController::class, 'testimonialsIndex'])->name('testimonialsIndex');
-Route::post('/testimonials', [InterfaceController::class, 'storeTestimonial'])->name('testimonials.store');
-
-
-Route::get('/login', function () {
+Route::get('/', function () {
     return redirect()->route('login');
 });
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
