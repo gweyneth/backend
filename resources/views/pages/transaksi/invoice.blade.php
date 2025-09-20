@@ -142,7 +142,7 @@
                 @if ($perusahaan && $perusahaan->logo)
                     <img src="{{ asset('storage/' . $perusahaan->logo) }}" alt="Logo Perusahaan">
                 @endif
-                <h5 class="mt-2">{{ $perusahaan->nama_perusahaan ?? 'Nama Perusahaan' }}</h5>
+                {{-- <h5 class="mt-2">{{ $perusahaan->nama_perusahaan ?? 'Nama Perusahaan' }}</h5> --}}
                 <p class="mb-0">{{ $perusahaan->alamat ?? 'Alamat Perusahaan' }}</p>
                 <p class="mb-0">Telp: {{ $perusahaan->no_handphone ?? '-' }}</p>
             </div>
