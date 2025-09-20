@@ -130,7 +130,7 @@
     </style>
 </head>
 <body onload="window.print()">
-    <div class="invoice-container">
+    <div class="invoice-container container-fluid" style="margin:40px auto">
         @if($transaksi->sisa <= 0)
             <div class="watermark" style="color: rgba(40, 167, 69, 0.1);">LUNAS</div>
         @else
@@ -168,7 +168,7 @@
         </div>
 
         <div class="invoice-table-container">
-            <table class="table table-products">
+            <table class="table table-products" >
                 <thead>
                     <tr>
                         <th>#</th>
