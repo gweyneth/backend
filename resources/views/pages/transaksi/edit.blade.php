@@ -1,14 +1,13 @@
 @extends('layouts.app')
 
 @section('content_header')
-<div class="row mb-3 align-items-center">
+<div class="row mb-2">
     <div class="col-sm-6">
-        <h1 class="m-0 text-dark">Edit Transaksi</h1>
+        <h1 class="m-0">Edit Transaksi</h1>
     </div>
-    <div class="col-sm-6 text-end">
-        <ol class="breadcrumb float-sm-right mb-0">
+    <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
             <li class="breadcrumb-item"><a href="{{ url('/dashboard') }}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('transaksi.index') }}">Transaksi</a></li>
             <li class="breadcrumb-item active">Edit Transaksi</li>
         </ol>
     </div>
@@ -16,307 +15,305 @@
 @endsection
 
 @section('content')
-<div class="container-fluid px-4">
-    <div class="card shadow-sm border-0 rounded-3 mb-4">
-        <div class="card-header bg-primary text-white rounded-top">
-            <h5 class="mb-0">Edit Transaksi #{{ $transaksi->no_transaksi }}</h5>
-        </div>
-        <div class="card-body p-4">
-            <form action="{{ route('transaksi.update', $transaksi->id) }}" method="POST" id="transaksi-form">
-                @csrf
-                @method('PUT')
-                <input type="hidden" name="no_transaksi" value="{{ $transaksi->no_transaksi }}">
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Edit Transaksi #{{ $transaksi->no_transaksi }}</h5>
+            </div>
+            <div class="card-body">
 
-                <div class="row g-4">
-                    <div class="col-md-4">
-                        <h6 class="mb-3 text-muted">Data Pemesan</h6>
-                        <div class="mb-3">
-                            <label for="pelanggan_id" class="form-label">Nama Pemesan</label>
-                            <select name="pelanggan_id" id="pelanggan_id" class="form-select @error('pelanggan_id') is-invalid @enderror" required>
-                                <option value="">Pilih Pelanggan</option>
-                                @foreach ($pelanggan as $item)
-                                <option value="{{ $item->id }}" data-alamat="{{ $item->alamat }}" data-telp="{{ $item->no_hp }}" {{ old('pelanggan_id', $transaksi->pelanggan_id) == $item->id ? 'selected' : '' }}>
-                                    {{ $item->nama }}
-                                </option>
-                                @endforeach
-                            </select>
-                            @error('pelanggan_id')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                <form action="{{ route('transaksi.update', $transaksi->id) }}" method="POST" id="transaksi-form">
+                    @csrf
+                    @method('PUT') {{-- Menggunakan method PUT untuk update --}}
+                    <input type="hidden" name="no_transaksi" value="{{ $transaksi->no_transaksi }}">
+
+                    <div class="row">
+                        {{-- Kolom Kiri: Detail Transaksi Utama --}}
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="pelanggan_id">Nama Pemesan</label>
+                                <select name="pelanggan_id" id="pelanggan_id" class="form-control @error('pelanggan_id') is-invalid @enderror">
+                                    <option value="">Pilih Pelanggan</option>
+                                    @foreach ($pelanggan as $item)
+                                        <option value="{{ $item->id }}"
+                                                data-alamat="{{ $item->alamat }}"
+                                                data-telp="{{ $item->no_hp }}"
+                                                {{ old('pelanggan_id', $transaksi->pelanggan_id) == $item->id ? 'selected' : '' }}>
+                                            {{ $item->nama }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('pelanggan_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label for="alamat_pelanggan">Alamat</label>
+                                <input type="text" id="alamat_pelanggan" class="form-control" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="telp_pelanggan">Telp</label>
+                                <input type="text" id="telp_pelanggan" class="form-control" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="tanggal_order">Tanggal Order</label>
+                                <input type="date" name="tanggal_order" id="tanggal_order" class="form-control @error('tanggal_order') is-invalid @enderror" value="{{ old('tanggal_order', $transaksi->tanggal_order->format('Y-m-d')) }}" required>
+                                @error('tanggal_order')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label for="tanggal_selesai">Tanggal Selesai</label>
+                                <input type="date" name="tanggal_selesai" id="tanggal_selesai" class="form-control @error('tanggal_selesai') is-invalid @enderror" value="{{ old('tanggal_selesai', $transaksi->tanggal_selesai ? $transaksi->tanggal_selesai->format('Y-m-d') : '') }}">
+                                @error('tanggal_selesai')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="alamat_pelanggan" class="form-label">Alamat</label>
-                            <input type="text" id="alamat_pelanggan" class="form-control" readonly>
-                        </div>
-                        <div class="mb-3">
-                            <label for="telp_pelanggan" class="form-label">Telp</label>
-                            <input type="text" id="telp_pelanggan" class="form-control" readonly>
-                        </div>
-                        <div class="mb-3">
-                            <label for="tanggal_order" class="form-label">Tanggal Order</label>
-                            <input type="date" name="tanggal_order" id="tanggal_order" class="form-control @error('tanggal_order') is-invalid @enderror" value="{{ old('tanggal_order', $transaksi->tanggal_order->format('Y-m-d')) }}" required>
-                            @error('tanggal_order')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="mb-3">
-                            <label for="tanggal_selesai" class="form-label">Tanggal Selesai</label>
-                            <input type="date" name="tanggal_selesai" id="tanggal_selesai" class="form-control @error('tanggal_selesai') is-invalid @enderror" value="{{ old('tanggal_selesai', $transaksi->tanggal_selesai ? $transaksi->tanggal_selesai->format('Y-m-d') : '') }}">
-                            @error('tanggal_selesai')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+
+                        {{-- Kolom Kanan: Detail Produk Transaksi --}}
+                        <div class="col-md-9">
+                            <h6>Detail Produk</h6>
+                            <div id="produk-items-container">
+                                {{-- Loop melalui detail transaksi yang sudah ada --}}
+                                @forelse ($transaksi->transaksiDetails as $index => $detail)
+                                    @include('pages.transaksi.produk_item_row', [
+                                        'index' => $index,
+                                        'produks' => $produks,
+                                        'detail' => $detail // Mengirimkan data detail ke partial
+                                    ])
+                                @empty
+                                    {{-- Jika tidak ada detail, tampilkan satu baris kosong --}}
+                                    @include('pages.transaksi.produk_item_row', ['index' => 0, 'produks' => $produks])
+                                @endforelse
+                            </div>
+                            <button type="button" class="btn btn-success btn-sm mt-2" id="add-produk-item">Tambah Baris Produk</button>
+
+                            <hr>
+
+                            <div class="form-group">
+                                <label for="total_keseluruhan">Total Keseluruhan</label>
+                                <input type="text" name="total_keseluruhan" id="total_keseluruhan" class="form-control" value="{{ old('total_keseluruhan', $transaksi->total) }}" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="uang_muka">Uang Muka</label>
+                                <input type="number" name="uang_muka" id="uang_muka" class="form-control @error('uang_muka') is-invalid @enderror" value="{{ old('uang_muka', $transaksi->uang_muka) }}" min="0" step="0.01">
+                                @error('uang_muka')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label for="diskon">Diskon</label>
+                                <input type="number" name="diskon" id="diskon" class="form-control @error('diskon') is-invalid @enderror" value="{{ old('diskon', $transaksi->diskon) }}" min="0" step="0.01">
+                                @error('diskon')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label for="sisa">Sisa Pembayaran</label>
+                                <input type="text" name="sisa" id="sisa" class="form-control" value="{{ old('sisa', $transaksi->sisa) }}" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="status_pengerjaan">Status Pengerjaan</label>
+                                <select name="status_pengerjaan" id="status_pengerjaan" class="form-control @error('status_pengerjaan') is-invalid @enderror" required>
+                                    <option value="menunggu export" {{ old('status_pengerjaan', $transaksi->status_pengerjaan) == 'menunggu export' ? 'selected' : '' }}>Menunggu Export</option>
+                                    <option value="belum dikerjakan" {{ old('status_pengerjaan', $transaksi->status_pengerjaan) == 'belum dikerjakan' ? 'selected' : '' }}>Belum Dikerjakan</option>
+                                    <option value="proses desain" {{ old('status_pengerjaan', $transaksi->status_pengerjaan) == 'proses desain' ? 'selected' : '' }}>Proses Desain</option>
+                                    <option value="proses produksi" {{ old('status_pengerjaan', $transaksi->status_pengerjaan) == 'proses produksi' ? 'selected' : '' }}>Proses Produksi</option>
+                                    <option value="selesai" {{ old('status_pengerjaan', $transaksi->status_pengerjaan) == 'selesai' ? 'selected' : '' }}>Selesai</option>
+                                </select>
+                                @error('status_pengerjaan')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
                     </div>
 
-                    <div class="col-md-8">
-                        {{-- <h6 class="mb-3 text-muted">Detail Produk</h6>
-                        <p class="text-muted small">
-                            <strong>Penting:</strong> Pastikan Anda juga mengubah input `qty` dan `harga` menjadi `type="text"` di dalam file `produk_item_row.blade.php` Anda.
-                        </p> --}}
-                        <div id="produk-items-container" class="mb-3">
-                            @forelse ($transaksi->transaksiDetails as $index => $detail)
-                                @include('pages.transaksi.produk_item_row', [
-                                    'index' => $index,
-                                    'produks' => $produks,
-                                    'detail' => $detail
-                                ])
-                            @empty
-                                @include('pages.transaksi.produk_item_row', ['index' => 0, 'produks' => $produks])
-                            @endforelse
-                        </div>
-                        <button type="button" class="btn btn-success btn-sm mb-4" id="add-produk-item">
-                            <i class="fas fa-plus"></i> Tambah Baris
-                        </button>
-
-                        <div class="border rounded p-3 bg-light">
-                            <div class="mb-3 row align-items-center">
-                                <label for="total_keseluruhan" class="col-sm-4 col-form-label">Total Keseluruhan</label>
-                                <div class="col-sm-8">
-                                    <input type="text" id="total_keseluruhan" name="total_keseluruhan" class="form-control bg-white input-currency" value="{{ old('total_keseluruhan', $transaksi->total) }}" readonly>
-                                </div>
-                            </div>
-                            <div class="mb-3 row align-items-center">
-                                <label for="uang_muka" class="col-sm-4 col-form-label">Uang Muka</label>
-                                <div class="col-sm-8">
-                                    <input type="text" id="uang_muka" name="uang_muka" class="form-control input-currency @error('uang_muka') is-invalid @enderror" value="{{ old('uang_muka', $transaksi->uang_muka) }}">
-                                    @error('uang_muka')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-                            <div class="mb-3 row align-items-center">
-                                <label for="diskon" class="col-sm-4 col-form-label">Diskon</label>
-                                <div class="col-sm-8">
-                                    <input type="text" id="diskon" name="diskon" class="form-control input-currency @error('diskon') is-invalid @enderror" value="{{ old('diskon', $transaksi->diskon) }}">
-                                    @error('diskon')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-                            <div class="mb-3 row align-items-center">
-                                <label for="sisa" class="col-sm-4 col-form-label">Sisa Pembayaran</label>
-                                <div class="col-sm-8">
-                                    <input type="text" id="sisa" name="sisa" class="form-control bg-white input-currency" value="{{ old('sisa', $transaksi->sisa) }}" readonly>
-                                </div>
-                            </div>
-                            <div class="row align-items-center">
-                                <label for="status_pengerjaan" class="col-sm-4 col-form-label">Status Pengerjaan</label>
-                                <div class="col-sm-8">
-                                    <select name="status_pengerjaan" id="status_pengerjaan" class="form-select @error('status_pengerjaan') is-invalid @enderror" required>
-                                        <option value="menunggu export" {{ old('status_pengerjaan', $transaksi->status_pengerjaan) == 'menunggu export' ? 'selected' : '' }}>Menunggu Export</option>
-                                        <option value="belum dikerjakan" {{ old('status_pengerjaan', $transaksi->status_pengerjaan) == 'belum dikerjakan' ? 'selected' : '' }}>Belum Dikerjakan</option>
-                                        <option value="proses desain" {{ old('status_pengerjaan', $transaksi->status_pengerjaan) == 'proses desain' ? 'selected' : '' }}>Proses Desain</option>
-                                        <option value="proses produksi" {{ old('status_pengerjaan', $transaksi->status_pengerjaan) == 'proses produksi' ? 'selected' : '' }}>Proses Produksi</option>
-                                        <option value="selesai" {{ old('status_pengerjaan', $transaksi->status_pengerjaan) == 'selesai' ? 'selected' : '' }}>Selesai</option>
-                                    </select>
-                                    @error('status_pengerjaan')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
+                    <div class="row mt-4">
+                        <div class="col-md-12 text-right">
+                            <button type="submit" class="btn btn-primary">Update Transaksi</button>
+                            <a href="{{ route('transaksi.index') }}" class="btn btn-secondary">Batal</a>
                         </div>
                     </div>
-                </div>
-
-                <div class="mt-4 d-flex justify-content-end gap-2">
-                    <button type="submit" class="btn btn-primary px-4">
-                        <i class="fas fa-save"></i> Update Transaksi
-                    </button>
-                    <a href="{{ route('transaksi.index') }}" class="btn btn-secondary px-4">
-                        <i class="fas fa-times"></i> Batal
-                    </a>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 </div>
 @endsection
 
 @push('scripts')
-{{-- Library untuk format mata uang otomatis --}}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cleave.js/1.6.0/cleave.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
 <script>
-    // Inisialisasi indeks untuk baris produk baru
-    let produkItemIndex = {{ old('nama_produk') ? count(old('nama_produk')) : (isset($transaksi) ? $transaksi->transaksiDetails->count() : 1) }};
-
-    // Objek untuk menyimpan semua instance Cleave.js agar nilainya bisa dibaca
-    const cleaveInstances = {};
-
-    // Fungsi untuk menginisialisasi Cleave pada sebuah elemen
-    function initCleave(selector) {
-        document.querySelectorAll(selector).forEach(el => {
-            const id = el.id || `cleave-${Date.now()}-${Math.random()}`;
-            el.id = id;
-            if (cleaveInstances[id]) {
-                cleaveInstances[id].destroy(); // Hancurkan instance lama jika ada
-            }
-
-            cleaveInstances[id] = new Cleave(el, {
-                numeral: true,
-                numeralThousandsGroupStyle: 'thousand',
-                delimiter: '.'
-            });
-        });
-    }
-
-    // Fungsi untuk mendapatkan nilai angka mentah dari input
-    function getRawValue(elementId) {
-        if (cleaveInstances[elementId]) {
-            return cleaveInstances[elementId].getRawValue() || 0;
-        }
-        const el = document.getElementById(elementId);
-        // Fallback untuk elemen non-cleave
-        return el ? parseFloat(el.value.replace(/\./g, '').replace(/,/g, '.')) || 0 : 0;
-    }
-
+    // Inisialisasi indeks produk, untuk baris baru yang ditambahkan
+    // Jika ada old input, gunakan jumlahnya. Jika tidak, gunakan jumlah detail + 1.
+    let produkItemIndex = {{ old('nama_produk') ? count(old('nama_produk')) : ($transaksi->transaksiDetails->count() > 0 ? $transaksi->transaksiDetails->count() : 1) }};
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Inisialisasi Cleave untuk semua input mata uang yang ada
-        initCleave('.input-currency');
-
+        // Inisialisasi data pelanggan
         const pelangganSelect = document.getElementById('pelanggan_id');
         const alamatPelangganInput = document.getElementById('alamat_pelanggan');
         const telpPelangganInput = document.getElementById('telp_pelanggan');
 
         function updatePelangganInfo() {
             const selectedOption = pelangganSelect.options[pelangganSelect.selectedIndex];
-            alamatPelangganInput.value = selectedOption ? (selectedOption.dataset.alamat || '') : '';
-            telpPelangganInput.value = selectedOption ? (selectedOption.dataset.telp || '') : '';
+            if (selectedOption) {
+                alamatPelangganInput.value = selectedOption.dataset.alamat || '';
+                telpPelangganInput.value = selectedOption.dataset.telp || '';
+            } else {
+                alamatPelangganInput.value = '';
+                telpPelangganInput.value = '';
+            }
         }
 
         pelangganSelect.addEventListener('change', updatePelangganInfo);
+        // Panggil saat DOMContentLoaded untuk mengisi data awal
         updatePelangganInfo();
 
+        // Fungsi untuk format Rupiah
+        function formatRupiah(angka) {
+            if (angka === null || angka === undefined || isNaN(angka)) {
+                return 'Rp 0';
+            }
+            var reverse = angka.toString().split('').reverse().join(''),
+                ribuan = reverse.match(/\d{1,3}/g);
+            ribuan = ribuan.join('.').split('').reverse().join('');
+            return 'Rp ' + ribuan;
+        }
+
+        // Fungsi untuk menghitung total keseluruhan dan sisa pembayaran
         function calculateGrandTotalAndRemaining() {
             let grandTotal = 0;
-            document.querySelectorAll('.produk-item').forEach(row => {
-                const totalEl = row.querySelector('.item-total');
-                if (totalEl) { // Pastikan elemen ada
-                    grandTotal += parseFloat(getRawValue(totalEl.id)) || 0;
-                }
+            document.querySelectorAll('.item-total').forEach(function(element) {
+                // Ambil nilai numerik dari input (tanpa format Rupiah)
+                grandTotal += parseFloat(element.value.replace(/[^0-9,-]+/g,"").replace(",", ".")) || 0;
             });
 
-            // Update total keseluruhan
-            const totalKeseluruhanEl = document.getElementById('total_keseluruhan');
-            if (cleaveInstances[totalKeseluruhanEl.id]) {
-                cleaveInstances[totalKeseluruhanEl.id].setRawValue(grandTotal);
-            } else {
-                totalKeseluruhanEl.value = grandTotal;
-            }
+            document.getElementById('total_keseluruhan').value = formatRupiah(grandTotal);
 
-            const uangMuka = parseFloat(getRawValue('uang_muka')) || 0;
-            const diskon = parseFloat(getRawValue('diskon')) || 0;
+            const uangMuka = parseFloat(document.getElementById('uang_muka').value) || 0;
+            const diskon = parseFloat(document.getElementById('diskon').value) || 0;
 
             let sisa = grandTotal - uangMuka - diskon;
-            sisa = sisa < 0 ? 0 : sisa;
+            if (sisa < 0) sisa = 0; // Pastikan sisa tidak negatif
 
-            // Update sisa
-            const sisaEl = document.getElementById('sisa');
-            if (cleaveInstances[sisaEl.id]) {
-                cleaveInstances[sisaEl.id].setRawValue(sisa);
-            } else {
-                sisaEl.value = sisa;
-            }
+            document.getElementById('sisa').value = formatRupiah(sisa);
         }
 
-        function calculateItemTotal(rowElement) {
-            const qtyInput = rowElement.querySelector('.item-qty');
-            const priceInput = rowElement.querySelector('.item-price');
-            const totalInput = rowElement.querySelector('.item-total');
+        // Event listener untuk uang muka dan diskon
+        document.getElementById('uang_muka').addEventListener('input', calculateGrandTotalAndRemaining);
+        document.getElementById('diskon').addEventListener('input', calculateGrandTotalAndRemaining);
 
-            const qty = parseFloat(qtyInput.value) || 0;
-            const price = parseFloat(getRawValue(priceInput.id)) || 0;
-            const total = qty * price;
 
-            if (cleaveInstances[totalInput.id]) {
-                cleaveInstances[totalInput.id].setRawValue(total);
-            } else {
-                totalInput.value = total;
-            }
-            calculateGrandTotalAndRemaining();
-        }
-
-        function initializeProdukRow(row) {
-            // Inisialisasi cleave untuk input harga & total di baris ini
-            initCleave(`#${row.querySelector('.item-price').id}`);
-            initCleave(`#${row.querySelector('.item-total').id}`);
-
-            const inputsToWatch = ['.item-qty', '.item-price', '.produk-name'];
-            inputsToWatch.forEach(selector => {
-                row.querySelector(selector).addEventListener('input', () => {
-                    if (selector === '.produk-name') {
-                        const selectedOption = row.querySelector('.produk-name').options[row.querySelector('.produk-name').selectedIndex];
-                        const priceEl = row.querySelector('.item-price');
-                        if (selectedOption && selectedOption.dataset.harga) {
-                            if (cleaveInstances[priceEl.id]) {
-                                cleaveInstances[priceEl.id].setRawValue(selectedOption.dataset.harga);
-                            } else {
-                                priceEl.value = selectedOption.dataset.harga;
-                            }
-                        }
+        // Fungsi untuk menambahkan baris produk baru
+        document.getElementById('add-produk-item').addEventListener('click', function() {
+            const container = document.getElementById('produk-items-container');
+            fetch('/transaksi/get-produk-item-row?index=' + produkItemIndex)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => { throw new Error(text) });
                     }
-                    calculateItemTotal(row);
+                    return response.text();
+                })
+                .then(html => {
+                    container.insertAdjacentHTML('beforeend', html);
+                    initializeProdukRow(produkItemIndex);
+                    produkItemIndex++;
+                    calculateGrandTotalAndRemaining();
+                })
+                .catch(error => {
+                    console.error('Error adding product row:', error);
+                    alert('Gagal menambahkan baris produk. Silakan cek konsol browser untuk detail error.');
                 });
+        });
+
+        // Fungsi untuk menghapus baris produk
+        document.getElementById('produk-items-container').addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-produk-item') || e.target.closest('.remove-produk-item')) {
+                const row = e.target.closest('.produk-item');
+                if (row) {
+                    row.remove();
+                    calculateGrandTotalAndRemaining();
+                }
+            }
+        });
+
+        // Fungsi untuk menginisialisasi event listener pada baris produk
+        function initializeProdukRow(index) {
+            const row = document.querySelector(`.produk-item[data-index="${index}"]`);
+            if (!row) return;
+
+            const produkSelect = row.querySelector('.produk-name');
+            const produkIdInput = row.querySelector('.produk-id');
+            const produkBahanInput = row.querySelector('.produk-bahan');
+            const produkUkuranInput = row.querySelector('.produk-ukuran');
+            const produkSatuanInput = row.querySelector('.produk-satuan');
+            const itemQtyInput = row.querySelector('.item-qty');
+            const itemPriceInput = row.querySelector('.item-price');
+            const itemTotalInput = row.querySelector('.item-total');
+
+            // Event listener untuk perubahan pilihan produk di select
+            produkSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                if (selectedOption && selectedOption.value) { // Pastikan opsi dipilih dan bukan "Pilih Produk"
+                    produkIdInput.value = selectedOption.dataset.id || '';
+                    produkBahanInput.value = selectedOption.dataset.bahan || '';
+                    produkUkuranInput.value = selectedOption.dataset.ukuran || '';
+                    produkSatuanInput.value = selectedOption.dataset.satuan || '';
+                    itemPriceInput.value = parseFloat(selectedOption.dataset.harga) || 0;
+                } else {
+                    // Reset jika tidak ada pilihan yang cocok atau "Pilih Produk" dipilih
+                    produkIdInput.value = '';
+                    produkBahanInput.value = '';
+                    produkUkuranInput.value = '';
+                    produkSatuanInput.value = '';
+                    itemPriceInput.value = 0;
+                }
+                calculateItemTotal(row);
             });
 
-            // Panggil kalkulasi awal untuk baris ini
+            // Event listener untuk perubahan Qty dan Harga
+            itemQtyInput.addEventListener('input', function() { calculateItemTotal(row); });
+            itemPriceInput.addEventListener('input', function() { calculateItemTotal(row); });
+
+            // Fungsi untuk menghitung total per item
+            function calculateItemTotal(rowElement) {
+                const qty = parseFloat(rowElement.querySelector('.item-qty').value) || 0;
+                const price = parseFloat(rowElement.querySelector('.item-price').value) || 0;
+                const itemTotal = qty * price;
+                rowElement.querySelector('.item-total').value = itemTotal; // Simpan sebagai angka untuk perhitungan grand total
+                rowElement.querySelector('.item-total').value = formatRupiah(itemTotal); // Tampilkan dalam format Rupiah
+                calculateGrandTotalAndRemaining(); // Hitung ulang total keseluruhan
+            }
+
+            // Panggil perhitungan awal untuk baris ini
             calculateItemTotal(row);
+
+            // Trigger change event pada select produk jika ada nilai yang sudah dipilih (misal dari old input atau data transaksi)
+            if (produkSelect.value) {
+                produkSelect.dispatchEvent(new Event('change'));
+            }
         }
 
-        // Event listener untuk input global (uang muka, diskon)
-        ['uang_muka', 'diskon'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.addEventListener('input', calculateGrandTotalAndRemaining);
-            }
+        // Inisialisasi baris produk yang sudah ada (dari $transaksi->transaksiDetails atau old input)
+        document.querySelectorAll('.produk-item').forEach(function(row) {
+            const index = row.dataset.index;
+            initializeProdukRow(index);
         });
 
-        // Inisialisasi semua baris yang ada saat halaman dimuat
-        document.querySelectorAll('.produk-item').forEach(row => {
-            initializeProdukRow(row);
-        });
-
-        document.getElementById('add-produk-item').addEventListener('click', function() {
-            fetch('/transaksi/get-produk-item-row?index=' + produkItemIndex)
-                .then(response => response.text())
-                .then(html => {
-                    const container = document.getElementById('produk-items-container');
-                    container.insertAdjacentHTML('beforeend', html);
-                    const newRow = container.lastElementChild;
-                    initializeProdukRow(newRow);
-                    produkItemIndex++;
-                });
-        });
-
-        document.getElementById('produk-items-container').addEventListener('click', function(e) {
-            if (e.target.closest('.remove-produk-item')) {
-                e.target.closest('.produk-item').remove();
-                calculateGrandTotalAndRemaining();
-            }
-        });
-
-        calculateGrandTotalAndRemaining(); // Hitung pertama kali saat halaman dimuat
+        // Panggil perhitungan total keseluruhan saat halaman dimuat
+        calculateGrandTotalAndRemaining();
     });
 </script>
 @endpush
