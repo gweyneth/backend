@@ -60,6 +60,7 @@
         }
         .invoice-table-container {
             padding: 0 40px;
+            
         }
         .table-products {
             font-size: 13px;
@@ -136,7 +137,6 @@
         @else
             <div class="watermark" style="color: rgba(220, 53, 69, 0.08);">BELUM LUNAS</div>
         @endif
-
         <div class="invoice-header">
             <div class="company-logo">
                 @if ($perusahaan && $perusahaan->logo)

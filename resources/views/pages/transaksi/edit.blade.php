@@ -287,15 +287,14 @@
             itemQtyInput.addEventListener('input', function() { calculateItemTotal(row); });
             itemPriceInput.addEventListener('input', function() { calculateItemTotal(row); });
 
-            // Fungsi untuk menghitung total per item
             function calculateItemTotal(rowElement) {
-                const qty = parseFloat(rowElement.querySelector('.item-qty').value) || 0;
-                const price = parseFloat(rowElement.querySelector('.item-price').value) || 0;
-                const itemTotal = qty * price;
-                rowElement.querySelector('.item-total').value = itemTotal; // Simpan sebagai angka untuk perhitungan grand total
-                rowElement.querySelector('.item-total').value = formatRupiah(itemTotal); // Tampilkan dalam format Rupiah
-                calculateGrandTotalAndRemaining(); // Hitung ulang total keseluruhan
-            }
+    const qty = parseFloat(rowElement.querySelector('.item-qty').value) || 0;
+    const price = parseFloat(rowElement.querySelector('.item-price').value) || 0;
+    const itemTotal = qty * price;
+    // Cukup satu baris ini saja, sama seperti di halaman create
+    rowElement.querySelector('.item-total').value = formatRupiah(itemTotal); 
+    calculateGrandTotalAndRemaining();
+}
 
             // Panggil perhitungan awal untuk baris ini
             calculateItemTotal(row);
