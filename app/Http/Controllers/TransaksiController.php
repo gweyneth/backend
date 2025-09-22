@@ -27,7 +27,6 @@ class TransaksiController extends Controller
 
         $query = Transaksi::with(['pelanggan'])->latest();
 
-        // Terapkan filter
         if ($searchQuery) {
             $query->where(function ($q) use ($searchQuery) {
                 $q->where('no_transaksi', 'like', '%' . $searchQuery . '%')
@@ -43,13 +42,11 @@ class TransaksiController extends Controller
             $query->whereDate('tanggal_order', '<=', $endDate);
         }
 
-        // Hitung total sebelum paginasi
         $totalKeseluruhanTransaksi = $query->clone()->sum('total');
         $totalPiutang = $query->clone()->sum('sisa');
 
         $transaksi = $query->paginate($limit);
         
-        // Data untuk modal pelunasan
         $rekening = Rekening::all();
         $perusahaan = Perusahaan::first();
 
@@ -66,47 +63,36 @@ class TransaksiController extends Controller
         ));
     }
 
-
     public function create()
     {
         $latestTransaksi = Transaksi::latest()->first();
         $nextNoTransaksi = $this->generateNoTransaksi($latestTransaksi ? $latestTransaksi->no_transaksi : null);
-
         $pelanggan = Pelanggan::all();
         $produks = Produk::all();
-
-        return view('pages.transaksi.create', compact(
-            'nextNoTransaksi',
-            'pelanggan',
-            'produks'
-        ));
+        return view('pages.transaksi.create', compact('nextNoTransaksi', 'pelanggan', 'produks'));
     }
 
     public function store(Request $request)
     {
         try {
+            // PERBAIKAN: Menggunakan fungsi helper yang baru dan andal
             $request->merge([
-                'total_keseluruhan' => (float) str_replace(['Rp ', '.'], '', $request->input('total_keseluruhan')),
-                'uang_muka' => (float) str_replace(['Rp ', '.'], '', $request->input('uang_muka')),
-                'diskon' => (float) str_replace(['Rp ', '.'], '', $request->input('diskon')),
-                'sisa' => (float) str_replace(['Rp ', '.'], '', $request->input('sisa')),
+                'total_keseluruhan' => $this->parseCurrencyToFloat($request->input('total_keseluruhan')),
+                'uang_muka' => $this->parseCurrencyToFloat($request->input('uang_muka')),
+                'diskon' => $this->parseCurrencyToFloat($request->input('diskon')),
+                'sisa' => $this->parseCurrencyToFloat($request->input('sisa')),
             ]);
 
             if ($request->has('harga') && is_array($request->input('harga'))) {
-                $cleanedHarga = [];
-                foreach ($request->input('harga') as $key => $value) {
-                    $cleanedHarga[$key] = (float) str_replace(['Rp ', '.'], '', $value);
-                }
+                $cleanedHarga = array_map(fn($value) => $this->parseCurrencyToFloat($value), $request->input('harga'));
                 $request->merge(['harga' => $cleanedHarga]);
             }
 
             if ($request->has('total_item') && is_array($request->input('total_item'))) {
-                $cleanedTotalItem = [];
-                foreach ($request->input('total_item') as $key => $value) {
-                    $cleanedTotalItem[$key] = (float) str_replace(['Rp ', '.'], '', $value);
-                }
+                $cleanedTotalItem = array_map(fn($value) => $this->parseCurrencyToFloat($value), $request->input('total_item'));
                 $request->merge(['total_item' => $cleanedTotalItem]);
             }
+            // --- AKHIR PERBAIKAN ---
 
             $validatedTransaksi = $request->validate([
                 'no_transaksi' => 'required|string|unique:transaksi,no_transaksi|max:255',
@@ -171,27 +157,17 @@ class TransaksiController extends Controller
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
-            dd($e->getMessage());
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
         }
     }
-
-   
-    public function show(int $id)
-    {
-        $transaksi = Transaksi::with(['pelanggan', 'transaksiDetails.produk'])->findOrFail($id);
-        return view('pages.transaksi.show', compact('transaksi'));
-    }
-
-   
+    
     public function edit(int $id)
     {
         $transaksi = Transaksi::with('transaksiDetails')->findOrFail($id);
         $pelanggan = Pelanggan::all();
         $produks = Produk::all();
-
         return view('pages.transaksi.edit', compact('transaksi', 'pelanggan', 'produks'));
     }
-
     
     public function update(Request $request, int $id)
     {
@@ -199,25 +175,19 @@ class TransaksiController extends Controller
 
         try {
             $request->merge([
-                'total_keseluruhan' => (float) str_replace(['Rp ', '.'], '', $request->input('total_keseluruhan')),
-                'uang_muka' => (float) str_replace(['Rp ', '.'], '', $request->input('uang_muka')),
-                'diskon' => (float) str_replace(['Rp ', '.'], '', $request->input('diskon')),
-                'sisa' => (float) str_replace(['Rp ', '.'], '', $request->input('sisa')),
+                'total_keseluruhan' => $this->parseCurrencyToFloat($request->input('total_keseluruhan')),
+                'uang_muka' => $this->parseCurrencyToFloat($request->input('uang_muka')),
+                'diskon' => $this->parseCurrencyToFloat($request->input('diskon')),
+                'sisa' => $this->parseCurrencyToFloat($request->input('sisa')),
             ]);
 
             if ($request->has('harga') && is_array($request->input('harga'))) {
-                $cleanedHarga = [];
-                foreach ($request->input('harga') as $key => $value) {
-                    $cleanedHarga[$key] = (float) str_replace(['Rp ', '.'], '', $value);
-                }
+                $cleanedHarga = array_map(fn($value) => $this->parseCurrencyToFloat($value), $request->input('harga'));
                 $request->merge(['harga' => $cleanedHarga]);
             }
 
             if ($request->has('total_item') && is_array($request->input('total_item'))) {
-                $cleanedTotalItem = [];
-                foreach ($request->input('total_item') as $key => $value) {
-                    $cleanedTotalItem[$key] = (float) str_replace(['Rp ', '.'], '', $value);
-                }
+                $cleanedTotalItem = array_map(fn($value) => $this->parseCurrencyToFloat($value), $request->input('total_item'));
                 $request->merge(['total_item' => $cleanedTotalItem]);
             }
 
@@ -286,7 +256,7 @@ class TransaksiController extends Controller
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
-            dd($e->getMessage());
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
         }
     }
     
