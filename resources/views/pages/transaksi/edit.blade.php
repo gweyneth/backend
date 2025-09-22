@@ -69,10 +69,10 @@
                     </div>
 
                     <div class="col-md-8">
-                        <h6 class="mb-3 text-muted">Detail Produk</h6>
+                        {{-- <h6 class="mb-3 text-muted">Detail Produk</h6>
                         <p class="text-muted small">
                             <strong>Penting:</strong> Pastikan Anda juga mengubah input `qty` dan `harga` menjadi `type="text"` di dalam file `produk_item_row.blade.php` Anda.
-                        </p>
+                        </p> --}}
                         <div id="produk-items-container" class="mb-3">
                             @forelse ($transaksi->transaksiDetails as $index => $detail)
                                 @include('pages.transaksi.produk_item_row', [

@@ -22,6 +22,18 @@
             <h5 class="mb-0">Form Transaksi Baru #{{ $nextNoTransaksi }}</h5>
         </div>
         <div class="card-body p-4">
+            {{-- Tampilkan error validasi jika ada --}}
+            @if ($errors->any())
+                <div class="alert alert-danger mb-4">
+                    <h5 class="alert-heading">Terdapat Kesalahan Input!</h5>
+                    <ul class="mb-0">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <form action="{{ route('transaksi.store') }}" method="POST" id="transaksi-form">
                 @csrf
                 <input type="hidden" name="no_transaksi" value="{{ $nextNoTransaksi }}">
@@ -31,6 +43,7 @@
                         <h6 class="mb-3 text-muted">Data Pemesan</h6>
                         <div class="mb-3">
                             <label for="pelanggan_id" class="form-label">Nama Pemesan</label>
+                            {{-- PERBAIKAN: Menambahkan kembali class 'form-select' --}}
                             <select name="pelanggan_id" id="pelanggan_id" class="form-select @error('pelanggan_id') is-invalid @enderror" required>
                                 <option value="">Pilih Pelanggan</option>
                                 @foreach ($pelanggan as $item)
@@ -69,10 +82,8 @@
 
                     <div class="col-md-8">
                         <h6 class="mb-3 text-muted">Detail Produk</h6>
-                        <p class="text-muted small">
-                            <strong>Penting:</strong> Pastikan Anda juga mengubah input `qty` dan `harga` menjadi `type="text"` di dalam file `produk_item_row.blade.php` Anda.
-                        </p>
                         <div id="produk-items-container" class="mb-3">
+                            {{-- Pastikan file partial `produk_item_row` ada dan benar --}}
                             @include('pages.transaksi.produk_item_row', ['index' => 0, 'produks' => $produks])
                         </div>
                         <button type="button" class="btn btn-success btn-sm mb-4" id="add-produk-item">
@@ -83,12 +94,14 @@
                             <div class="mb-3 row align-items-center">
                                 <label for="total_keseluruhan" class="col-sm-4 col-form-label">Total Keseluruhan</label>
                                 <div class="col-sm-8">
+                                    {{-- PERBAIKAN: Menambahkan kembali class 'form-control' --}}
                                     <input type="text" id="total_keseluruhan" name="total_keseluruhan" class="form-control bg-white input-currency" value="{{ old('total_keseluruhan', 0) }}" readonly>
                                 </div>
                             </div>
                             <div class="mb-3 row align-items-center">
                                 <label for="uang_muka" class="col-sm-4 col-form-label">Uang Muka</label>
                                 <div class="col-sm-8">
+                                    {{-- PERBAIKAN: Menambahkan kembali class 'form-control' --}}
                                     <input type="text" id="uang_muka" name="uang_muka" class="form-control input-currency @error('uang_muka') is-invalid @enderror" value="{{ old('uang_muka', 0) }}">
                                     @error('uang_muka')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -98,6 +111,7 @@
                             <div class="mb-3 row align-items-center">
                                 <label for="diskon" class="col-sm-4 col-form-label">Diskon</label>
                                 <div class="col-sm-8">
+                                    {{-- PERBAIKAN: Menambahkan kembali class 'form-control' --}}
                                     <input type="text" id="diskon" name="diskon" class="form-control input-currency @error('diskon') is-invalid @enderror" value="{{ old('diskon', 0) }}">
                                     @error('diskon')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -107,12 +121,14 @@
                             <div class="mb-3 row align-items-center">
                                 <label for="sisa" class="col-sm-4 col-form-label">Sisa Pembayaran</label>
                                 <div class="col-sm-8">
+                                    {{-- PERBAIKAN: Menambahkan kembali class 'form-control' --}}
                                     <input type="text" id="sisa" name="sisa" class="form-control bg-white input-currency" value="{{ old('sisa', 0) }}" readonly>
                                 </div>
                             </div>
                             <div class="row align-items-center">
                                 <label for="status_pengerjaan" class="col-sm-4 col-form-label">Status Pengerjaan</label>
                                 <div class="col-sm-8">
+                                    {{-- PERBAIKAN: Menambahkan kembali class 'form-select' --}}
                                     <select name="status_pengerjaan" id="status_pengerjaan" class="form-select @error('status_pengerjaan') is-invalid @enderror" required>
                                         <option value="menunggu export" {{ old('status_pengerjaan') == 'menunggu export' ? 'selected' : '' }}>Menunggu Export</option>
                                         <option value="belum dikerjakan" {{ old('status_pengerjaan') == 'belum dikerjakan' ? 'selected' : '' }}>Belum Dikerjakan</option>
@@ -148,87 +164,50 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cleave.js/1.6.0/cleave.min.js"></script>
 
 <script>
-    // Inisialisasi indeks untuk baris produk baru
-    let produkItemIndex = {{ old('nama_produk') ? count(old('nama_produk')) : (isset($transaksi) ? $transaksi->transaksiDetails->count() : 1) }};
+    document.addEventListener('DOMContentLoaded', function() {
+        let produkItemIndex = document.querySelectorAll('.produk-item').length;
+        const cleaveInstances = {};
 
-    // Objek untuk menyimpan semua instance Cleave.js agar nilainya bisa dibaca
-    const cleaveInstances = {};
+        function initCleave(element) {
+            if (!element || cleaveInstances[element.id]) return;
+            
+            const id = element.id || `cleave-${Date.now()}-${Math.random()}`;
+            element.id = id;
 
-    // Fungsi untuk menginisialisasi Cleave pada sebuah elemen
-    function initCleave(selector) {
-        document.querySelectorAll(selector).forEach(el => {
-            const id = el.id || `cleave-${Date.now()}-${Math.random()}`;
-            el.id = id;
-            if (cleaveInstances[id]) {
-                cleaveInstances[id].destroy(); // Hancurkan instance lama jika ada
-            }
-
-            cleaveInstances[id] = new Cleave(el, {
+            cleaveInstances[element.id] = new Cleave(element, {
                 numeral: true,
                 numeralThousandsGroupStyle: 'thousand',
                 delimiter: '.'
             });
-        });
-    }
-
-    // Fungsi untuk mendapatkan nilai angka mentah dari input
-    function getRawValue(elementId) {
-        if (cleaveInstances[elementId]) {
-            return cleaveInstances[elementId].getRawValue() || 0;
-        }
-        const el = document.getElementById(elementId);
-        // Fallback untuk elemen non-cleave
-        return el ? parseFloat(el.value.replace(/\./g, '').replace(/,/g, '.')) || 0 : 0;
-    }
-
-
-    document.addEventListener('DOMContentLoaded', function() {
-        // Inisialisasi Cleave untuk semua input mata uang yang ada
-        initCleave('.input-currency');
-
-        const pelangganSelect = document.getElementById('pelanggan_id');
-        const alamatPelangganInput = document.getElementById('alamat_pelanggan');
-        const telpPelangganInput = document.getElementById('telp_pelanggan');
-
-        function updatePelangganInfo() {
-            const selectedOption = pelangganSelect.options[pelangganSelect.selectedIndex];
-            alamatPelangganInput.value = selectedOption ? (selectedOption.dataset.alamat || '') : '';
-            telpPelangganInput.value = selectedOption ? (selectedOption.dataset.telp || '') : '';
         }
 
-        pelangganSelect.addEventListener('change', updatePelangganInfo);
-        updatePelangganInfo();
+        function getRawValue(element) {
+            if (element && cleaveInstances[element.id]) {
+                return cleaveInstances[element.id].getRawValue() || 0;
+            }
+            if (element) {
+                return parseFloat(element.value.replace(/\./g, '')) || 0;
+            }
+            return 0;
+        }
 
         function calculateGrandTotalAndRemaining() {
             let grandTotal = 0;
             document.querySelectorAll('.produk-item').forEach(row => {
                 const totalEl = row.querySelector('.item-total');
-                if (totalEl) { // Pastikan elemen ada
-                    grandTotal += parseFloat(getRawValue(totalEl.id)) || 0;
-                }
+                grandTotal += parseFloat(getRawValue(totalEl));
             });
-
-            // Update total keseluruhan
+            
             const totalKeseluruhanEl = document.getElementById('total_keseluruhan');
-            if (cleaveInstances[totalKeseluruhanEl.id]) {
-                cleaveInstances[totalKeseluruhanEl.id].setRawValue(grandTotal);
-            } else {
-                totalKeseluruhanEl.value = grandTotal;
-            }
+            cleaveInstances[totalKeseluruhanEl.id].setRawValue(grandTotal);
 
-            const uangMuka = parseFloat(getRawValue('uang_muka')) || 0;
-            const diskon = parseFloat(getRawValue('diskon')) || 0;
+            const uangMuka = getRawValue(document.getElementById('uang_muka'));
+            const diskon = getRawValue(document.getElementById('diskon'));
 
             let sisa = grandTotal - uangMuka - diskon;
             sisa = sisa < 0 ? 0 : sisa;
 
-            // Update sisa
-            const sisaEl = document.getElementById('sisa');
-            if (cleaveInstances[sisaEl.id]) {
-                cleaveInstances[sisaEl.id].setRawValue(sisa);
-            } else {
-                sisaEl.value = sisa;
-            }
+            cleaveInstances[document.getElementById('sisa').id].setRawValue(sisa);
         }
 
         function calculateItemTotal(rowElement) {
@@ -237,59 +216,62 @@
             const totalInput = rowElement.querySelector('.item-total');
 
             const qty = parseFloat(qtyInput.value) || 0;
-            const price = parseFloat(getRawValue(priceInput.id)) || 0;
+            const price = parseFloat(getRawValue(priceInput));
             const total = qty * price;
 
-            if (cleaveInstances[totalInput.id]) {
-                cleaveInstances[totalInput.id].setRawValue(total);
-            } else {
-                totalInput.value = total;
-            }
+            cleaveInstances[totalInput.id].setRawValue(total);
             calculateGrandTotalAndRemaining();
         }
 
         function initializeProdukRow(row) {
-            // Inisialisasi cleave untuk input harga & total di baris ini
-            initCleave(`#${row.querySelector('.item-price').id}`);
-            initCleave(`#${row.querySelector('.item-total').id}`);
+            ['.item-price', '.item-total'].forEach(selector => initCleave(row.querySelector(selector)));
+            
+            const produkSelect = row.querySelector('.produk-name');
+            const qtyInput = row.querySelector('.item-qty');
+            const priceInput = row.querySelector('.item-price');
 
-            const inputsToWatch = ['.item-qty', '.item-price', '.produk-name'];
-            inputsToWatch.forEach(selector => {
-                row.querySelector(selector).addEventListener('input', () => {
-                    if (selector === '.produk-name') {
-                        const selectedOption = row.querySelector('.produk-name').options[row.querySelector('.produk-name').selectedIndex];
-                        const priceEl = row.querySelector('.item-price');
-                        if (selectedOption && selectedOption.dataset.harga) {
-                            if (cleaveInstances[priceEl.id]) {
-                                cleaveInstances[priceEl.id].setRawValue(selectedOption.dataset.harga);
-                            } else {
-                                priceEl.value = selectedOption.dataset.harga;
-                            }
-                        }
-                    }
-                    calculateItemTotal(row);
-                });
+            // PERBAIKAN: Event listener untuk dropdown produk diubah menjadi 'change'
+            produkSelect.addEventListener('change', () => {
+                const selectedOption = produkSelect.options[produkSelect.selectedIndex];
+                const ukuranInput = row.querySelector('.produk-ukuran');
+                const satuanInput = row.querySelector('.produk-satuan');
+
+                if (selectedOption && selectedOption.value) {
+                    if (ukuranInput) ukuranInput.value = selectedOption.dataset.ukuran || '';
+                    if (satuanInput) satuanInput.value = selectedOption.dataset.satuan || '';
+                    cleaveInstances[priceInput.id].setRawValue(selectedOption.dataset.harga || 0);
+                } else {
+                    if (ukuranInput) ukuranInput.value = '';
+                    if (satuanInput) satuanInput.value = '';
+                    cleaveInstances[priceInput.id].setRawValue(0);
+                }
+                calculateItemTotal(row);
             });
 
-            // Panggil kalkulasi awal untuk baris ini
-            calculateItemTotal(row);
+            // Event listener untuk qty dan harga tetap 'input'
+            qtyInput.addEventListener('input', () => calculateItemTotal(row));
+            priceInput.addEventListener('input', () => calculateItemTotal(row));
+            
+            // Panggil event 'change' sekali untuk memuat data awal jika produk sudah terpilih
+            if (produkSelect.value) {
+                produkSelect.dispatchEvent(new Event('change'));
+            }
         }
+
+        // Inisialisasi cleave untuk input global
+        ['.input-currency'].forEach(selector => document.querySelectorAll(selector).forEach(el => initCleave(el)));
+
+        // Inisialisasi semua baris produk yang ada saat halaman dimuat
+        document.querySelectorAll('.produk-item').forEach(row => initializeProdukRow(row));
 
         // Event listener untuk input global (uang muka, diskon)
         ['uang_muka', 'diskon'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.addEventListener('input', calculateGrandTotalAndRemaining);
-            }
+            document.getElementById(id).addEventListener('input', calculateGrandTotalAndRemaining);
         });
 
-        // Inisialisasi semua baris yang ada saat halaman dimuat
-        document.querySelectorAll('.produk-item').forEach(row => {
-            initializeProdukRow(row);
-        });
-
+        // Event listener untuk menambah baris
         document.getElementById('add-produk-item').addEventListener('click', function() {
-            fetch('/transaksi/get-produk-item-row?index=' + produkItemIndex)
+            fetch(`/transaksi/get-produk-item-row?index=${produkItemIndex}`)
                 .then(response => response.text())
                 .then(html => {
                     const container = document.getElementById('produk-items-container');
@@ -300,14 +282,26 @@
                 });
         });
 
+        // Event listener untuk menghapus baris (menggunakan event delegation)
         document.getElementById('produk-items-container').addEventListener('click', function(e) {
-            if (e.target.closest('.remove-produk-item')) {
+            if (e.target && e.target.closest('.remove-produk-item')) {
                 e.target.closest('.produk-item').remove();
                 calculateGrandTotalAndRemaining();
             }
         });
 
-        calculateGrandTotalAndRemaining(); // Hitung pertama kali saat halaman dimuat
+        // Kalkulasi awal saat halaman dimuat
+        calculateGrandTotalAndRemaining();
+        
+        // Inisialisasi info pelanggan
+        const pelangganSelect = document.getElementById('pelanggan_id');
+        function updatePelangganInfo() {
+            const selectedOption = pelangganSelect.options[pelangganSelect.selectedIndex];
+            document.getElementById('alamat_pelanggan').value = selectedOption ? (selectedOption.dataset.alamat || '') : '';
+            document.getElementById('telp_pelanggan').value = selectedOption ? (selectedOption.dataset.telp || '') : '';
+        }
+        pelangganSelect.addEventListener('change', updatePelangganInfo);
+        updatePelangganInfo();
     });
 </script>
 @endpush
