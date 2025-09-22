@@ -95,12 +95,10 @@
                             </div>
                             <div class="form-group">
                                 <label for="uang_muka">Uang Muka</label>
-                                {{-- PERBAIKAN: type diubah menjadi text --}}
                                 <input type="text" name="uang_muka" id="uang_muka" class="form-control @error('uang_muka') is-invalid @enderror" value="{{ old('uang_muka', $transaksi->uang_muka) }}">
                             </div>
                             <div class="form-group">
                                 <label for="diskon">Diskon</label>
-                                {{-- PERBAIKAN: type diubah menjadi text --}}
                                 <input type="text" name="diskon" id="diskon" class="form-control @error('diskon') is-invalid @enderror" value="{{ old('diskon', $transaksi->diskon) }}">
                             </div>
                             <div class="form-group">
@@ -137,132 +135,120 @@
 @endsection
 
 @push('scripts')
+{{-- KODE JAVASCRIPT BARU YANG LEBIH STABIL --}}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        let produkItemIndex = document.querySelectorAll('.produk-item').length;
+document.addEventListener('DOMContentLoaded', function() {
+    let produkItemIndex = document.querySelectorAll('.produk-item').length;
 
-        // PERBAIKAN: Fungsi parser yang lebih andal
-        function parseCurrency(value) {
-            if (typeof value !== 'string') {
-                value = String(value);
-            }
-            // Hapus semua karakter kecuali digit dan koma (untuk desimal)
-            let rawValue = value.replace(/[^0-9,]/g, '').replace(',', '.');
-            return parseFloat(rawValue) || 0;
-        }
-        
-        // PERBAIKAN: Fungsi format yang konsisten
-        function formatRupiah(number) {
-            return new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                minimumFractionDigits: 0
-            }).format(number);
-        }
-        
-        // Fungsi untuk memformat input saat pengguna selesai mengetik
-        function formatInputOnBlur(e) {
-            const rawValue = parseCurrency(e.target.value);
-            e.target.value = formatRupiah(rawValue).replace(/Rp\s?/, '');
-        }
+    // --- FUNGSI UTAMA UNTUK ANGKA ---
+    // 1. Mengambil angka murni dari string (e.g., "Rp 500.000" -> 500000)
+    const parseCurrency = value => parseFloat(String(value).replace(/[^0-9]/g, '')) || 0;
+    
+    // 2. Memformat angka menjadi format ribuan Indonesia (e.g., 500000 -> "500.000")
+    const formatNumber = number => new Intl.NumberFormat('id-ID').format(number);
 
-        function calculateGrandTotalAndRemaining() {
-            let grandTotal = 0;
-            document.querySelectorAll('.item-total').forEach(function(element) {
-                grandTotal += parseCurrency(element.value);
+    // --- FUNGSI KALKULASI ---
+    function calculateGrandTotalAndRemaining() {
+        let grandTotal = 0;
+        document.querySelectorAll('.item-total').forEach(el => {
+            grandTotal += parseCurrency(el.value);
+        });
+        
+        document.getElementById('total_keseluruhan').value = formatNumber(grandTotal);
+
+        const uangMuka = parseCurrency(document.getElementById('uang_muka').value);
+        const diskon = parseCurrency(document.getElementById('diskon').value);
+
+        let sisa = grandTotal - uangMuka - diskon;
+        sisa = sisa < 0 ? 0 : sisa;
+
+        document.getElementById('sisa').value = formatNumber(sisa);
+    }
+
+    function calculateItemTotal(rowElement) {
+        const qty = parseFloat(rowElement.querySelector('.item-qty').value) || 0;
+        const price = parseCurrency(rowElement.querySelector('.item-price').value);
+        const total = qty * price;
+        
+        rowElement.querySelector('.item-total').value = formatNumber(total);
+        calculateGrandTotalAndRemaining();
+    }
+
+    // --- FUNGSI INISIALISASI & EVENT LISTENER ---
+    function initializeProdukRow(row) {
+        const produkSelect = row.querySelector('.produk-name');
+        const qtyInput = row.querySelector('.item-qty');
+        const priceInput = row.querySelector('.item-price');
+
+        // Event saat dropdown produk diganti
+        produkSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const harga = selectedOption.dataset.harga || 0;
+            priceInput.value = formatNumber(harga);
+            calculateItemTotal(row);
+        });
+
+        // Event saat quantity atau harga diketik
+        qtyInput.addEventListener('input', () => calculateItemTotal(row));
+        priceInput.addEventListener('input', () => calculateItemTotal(row));
+
+        // Event saat selesai mengetik di input harga (untuk merapikan format)
+        priceInput.addEventListener('blur', () => {
+            priceInput.value = formatNumber(parseCurrency(priceInput.value));
+        });
+
+        // Panggil kalkulasi awal untuk baris ini
+        calculateItemTotal(row);
+    }
+
+    // Event listener untuk input Uang Muka dan Diskon
+    ['uang_muka', 'diskon'].forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener('input', calculateGrandTotalAndRemaining);
+        el.addEventListener('blur', () => {
+            el.value = formatNumber(parseCurrency(el.value));
+        });
+    });
+
+    // Inisialisasi setiap baris produk yang sudah ada di halaman
+    document.querySelectorAll('.produk-item').forEach(row => initializeProdukRow(row));
+
+    // Format nilai awal Uang Muka dan Diskon saat halaman dimuat
+    document.getElementById('uang_muka').value = formatNumber(parseCurrency(document.getElementById('uang_muka').value));
+    document.getElementById('diskon').value = formatNumber(parseCurrency(document.getElementById('diskon').value));
+    
+    // Panggil kalkulasi utama sekali di akhir untuk memastikan semua total benar
+    calculateGrandTotalAndRemaining();
+
+    // Event listener untuk menambah baris baru
+    document.getElementById('add-produk-item').addEventListener('click', function() {
+        fetch(`/transaksi/get-produk-item-row?index=${produkItemIndex}`)
+            .then(response => response.text())
+            .then(html => {
+                const container = document.getElementById('produk-items-container');
+                container.insertAdjacentHTML('beforeend', html);
+                initializeProdukRow(container.lastElementChild);
+                produkItemIndex++;
             });
+    });
 
-            document.getElementById('total_keseluruhan').value = formatRupiah(grandTotal);
-
-            const uangMuka = parseCurrency(document.getElementById('uang_muka').value);
-            const diskon = parseCurrency(document.getElementById('diskon').value);
-
-            let sisa = grandTotal - uangMuka - diskon;
-            sisa = sisa < 0 ? 0 : sisa;
-
-            document.getElementById('sisa').value = formatRupiah(sisa);
-        }
-
-        function calculateItemTotal(rowElement) {
-            const qty = parseFloat(rowElement.querySelector('.item-qty').value) || 0;
-            const price = parseCurrency(rowElement.querySelector('.item-price').value);
-            const total = qty * price;
-            
-            rowElement.querySelector('.item-total').value = formatRupiah(total);
+    // Event listener untuk menghapus baris
+    document.getElementById('produk-items-container').addEventListener('click', function(e) {
+        if (e.target.closest('.remove-produk-item')) {
+            e.target.closest('.produk-item').remove();
             calculateGrandTotalAndRemaining();
         }
-
-        function initializeProdukRow(row) {
-            const produkSelect = row.querySelector('.produk-name');
-            const qtyInput = row.querySelector('.item-qty');
-            const priceInput = row.querySelector('.item-price');
-
-            // Tambahkan event listener untuk format otomatis
-            priceInput.addEventListener('blur', formatInputOnBlur);
-
-            produkSelect.addEventListener('change', function() {
-                const selectedOption = this.options[this.selectedIndex];
-                if (selectedOption && selectedOption.value) {
-                    const harga = selectedOption.dataset.harga || 0;
-                    priceInput.value = formatRupiah(harga).replace(/Rp\s?/, '');
-                } else {
-                    priceInput.value = 0;
-                }
-                calculateItemTotal(row);
-            });
-
-            qtyInput.addEventListener('input', () => calculateItemTotal(row));
-            priceInput.addEventListener('input', () => calculateItemTotal(row));
-            
-            // Format nilai awal harga dan total
-            priceInput.value = formatRupiah(parseCurrency(priceInput.value)).replace(/Rp\s?/, '');
-            calculateItemTotal(row);
-        }
-        
-        // Inisialisasi semua baris produk yang ada
-        document.querySelectorAll('.produk-item').forEach(row => initializeProdukRow(row));
-        
-        // Event listener untuk input global
-        const globalInputs = ['uang_muka', 'diskon'];
-        globalInputs.forEach(id => {
-            const el = document.getElementById(id);
-            el.addEventListener('input', calculateGrandTotalAndRemaining);
-            el.addEventListener('blur', formatInputOnBlur);
-            // Format nilai awal
-            el.value = formatRupiah(parseCurrency(el.value)).replace(/Rp\s?/, '');
-        });
-
-        document.getElementById('add-produk-item').addEventListener('click', function() {
-             fetch('/transaksi/get-produk-item-row?index=' + produkItemIndex)
-                .then(response => response.text())
-                .then(html => {
-                    const container = document.getElementById('produk-items-container');
-                    container.insertAdjacentHTML('beforeend', html);
-                    const newRow = container.lastElementChild;
-                    initializeProdukRow(newRow);
-                    produkItemIndex++;
-                });
-        });
-
-        document.getElementById('produk-items-container').addEventListener('click', function(e) {
-            if (e.target.closest('.remove-produk-item')) {
-                e.target.closest('.produk-item').remove();
-                calculateGrandTotalAndRemaining();
-            }
-        });
-
-        // Inisialisasi info pelanggan
-        const pelangganSelect = document.getElementById('pelanggan_id');
-        function updatePelangganInfo() {
-            const selectedOption = pelangganSelect.options[pelangganSelect.selectedIndex];
-            document.getElementById('alamat_pelanggan').value = selectedOption ? (selectedOption.dataset.alamat || '') : '';
-            document.getElementById('telp_pelanggan').value = selectedOption ? (selectedOption.dataset.telp || '') : '';
-        }
-        pelangganSelect.addEventListener('change', updatePelangganInfo);
-        updatePelangganInfo(); // Panggil saat awal
-        
-        // Kalkulasi akhir saat halaman dimuat
-        calculateGrandTotalAndRemaining();
     });
+
+    // Inisialisasi info pelanggan
+    const pelangganSelect = document.getElementById('pelanggan_id');
+    function updatePelangganInfo() {
+        const selectedOption = pelangganSelect.options[pelangganSelect.selectedIndex];
+        document.getElementById('alamat_pelanggan').value = selectedOption ? (selectedOption.dataset.alamat || '') : '';
+        document.getElementById('telp_pelanggan').value = selectedOption ? (selectedOption.dataset.telp || '') : '';
+    }
+    pelangganSelect.addEventListener('change', updatePelangganInfo);
+    updatePelangganInfo();
+});
 </script>
 @endpush
