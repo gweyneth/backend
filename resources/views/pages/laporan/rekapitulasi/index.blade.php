@@ -16,13 +16,13 @@
 
 @section('content')
 <div class="row">
-    {{-- PERBAIKAN: Ubah class div ini agar menjadi full-width --}}
     <div class="col-12">
         <div class="card">
             <div class="card-header">
                 <h3 class="card-title">
                     <i class="fas fa-calculator mr-1"></i>
-                    Laporan Rekapitulasi
+                    {{-- Tampilkan judul periode yang aktif --}}
+                    Laporan Rekapitulasi: <strong>{{ $periodeJudul }}</strong>
                 </h3>
             </div>
             <div class="card-body">
@@ -30,12 +30,16 @@
                 <div class="mb-4">
                     <form action="{{ route('rekapitulasi.index') }}" method="GET" id="filterForm">
                         <div class="row align-items-end">
-                            <div class="col-md-4 form-group">
-                                <label for="bulan">Filter Bulan</label>
+                            <div class="col-md-auto form-group">
+                                <label for="bulan">Filter Per Bulan</label>
                                 <input type="month" name="bulan" id="bulan" class="form-control" value="{{ $selectedMonth }}">
                             </div>
-                            <div class="col-md-3 form-group">
+                            <div class="col-md-auto form-group">
                                 <button type="submit" class="btn btn-primary"><i class="fas fa-filter mr-1"></i> Filter</button>
+                                {{-- TAMBAHKAN TOMBOL INI --}}
+                                <a href="{{ route('rekapitulasi.index', ['periode' => 'all']) }}" class="btn btn-secondary">
+                                    <i class="fas fa-globe mr-1"></i> Tampilkan Semua
+                                </a>
                             </div>
                         </div>
                     </form>
