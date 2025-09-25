@@ -48,6 +48,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('piutang', [TransaksiController::class, 'piutangIndex'])->name('piutang.index');
         Route::get('pendapatan', [TransaksiController::class, 'pendapatanIndex'])->name('pendapatan.index');
         Route::get('rekapitulasi', [App\Http\Controllers\RekapitulasiController::class, 'index'])->name('rekapitulasi.index');
+        Route::get('rekapitulasi/cetak-pdf', [App\Http\Controllers\RekapitulasiController::class, 'cetakPdf'])->name('rekapitulasi.cetak-pdf');
         Route::get('pendapatan/print-pdf', [TransaksiController::class, 'printPendapatanPdf'])->name('pendapatan.print-pdf');
         // Route::get('kasbon-karyawan', [KasbonKaryawanController::class, 'index'])->name('kasbon-karyawan.index');
         Route::get('omset-penjualan', [OmsetPenjualanController::class, 'index'])->name('omset.index');
