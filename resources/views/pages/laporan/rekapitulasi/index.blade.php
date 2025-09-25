@@ -21,7 +21,6 @@
             <div class="card-header">
                 <h3 class="card-title">
                     <i class="fas fa-calculator mr-1"></i>
-                    {{-- Tampilkan judul periode yang aktif --}}
                     Laporan Rekapitulasi: <strong>{{ $periodeJudul }}</strong>
                 </h3>
             </div>
@@ -29,14 +28,13 @@
                 {{-- Form Filter --}}
                 <div class="mb-4">
                     <form action="{{ route('rekapitulasi.index') }}" method="GET" id="filterForm">
-                        <div class="row align-items-end">
+                         <div class="row align-items-end">
                             <div class="col-md-auto form-group">
                                 <label for="bulan">Filter Per Bulan</label>
                                 <input type="month" name="bulan" id="bulan" class="form-control" value="{{ $selectedMonth }}">
                             </div>
                             <div class="col-md-auto form-group">
                                 <button type="submit" class="btn btn-primary"><i class="fas fa-filter mr-1"></i> Filter</button>
-                                {{-- TAMBAHKAN TOMBOL INI --}}
                                 <a href="{{ route('rekapitulasi.index', ['periode' => 'all']) }}" class="btn btn-secondary">
                                     <i class="fas fa-globe mr-1"></i> Tampilkan Semua
                                 </a>
@@ -45,42 +43,82 @@
                     </form>
                 </div>
 
-                {{-- Tabel Rekapitulasi --}}
+                {{-- Tabel Rekapitulasi Detail --}}
                 <div class="table-responsive">
-                    <table class="table table-bordered table-striped">
+                    <table class="table table-bordered">
+                        {{-- Bagian Pemasukan --}}
                         <thead class="thead-light">
                             <tr>
-                                <th style="width: 70%;">Uraian</th>
-                                <th>Jumlah</th>
+                                <th><i class="fas fa-arrow-down text-green mr-2"></i> Uraian Pemasukan (Omset)</th>
+                                <th class="text-right">Jumlah</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td><i class="fas fa-arrow-down text-green mr-2"></i>Total Pemasukan (Omset)</td>
-                                <td class="text-success font-weight-bold">Rp{{ number_format($totalPemasukan, 0, ',', '.') }}</td>
-                            </tr>
-                            <tr>
-                                <td><i class="fas fa-arrow-up text-danger mr-2"></i>Total Pengeluaran</td>
-                                <td class="text-danger font-weight-bold">(-) Rp{{ number_format($totalPengeluaran, 0, ',', '.') }}</td>
-                            </tr>
-                            <tr style="background-color: #f8f9fa;">
-                                <td class="font-weight-bold text-right">LABA KOTOR (Pemasukan - Pengeluaran)</td>
-                                <td class="font-weight-bold">Rp{{ number_format($labaKotor, 0, ',', '.') }}</td>
-                            </tr>
-                             <tr>
-                                <td><i class="fas fa-hand-holding-usd text-warning mr-2"></i>Total Piutang (Tagihan Belum Dibayar)</td>
-                                <td class="text-warning font-weight-bold">(-) Rp{{ number_format($totalPiutang, 0, ',', '.') }}</td>
-                            </tr>
-                            <tr class="bg-primary text-white">
-                                <td class="font-weight-bold text-right">PERKIRAAN SALDO BERSIH (Kas di Tangan)</td>
-                                <td class="font-weight-bold">Rp{{ number_format($saldoBersih, 0, ',', '.') }}</td>
+                            @forelse ($detailPemasukan as $item)
+                                <tr>
+                                    <td class="pl-4"><small>({{ $item->transaksi->no_transaksi ?? 'N/A' }}) - {{ $item->produk->nama ?? 'Produk Dihapus' }} ({{ $item->qty }}x)</small></td>
+                                    <td class="text-right">Rp{{ number_format($item->total, 0, ',', '.') }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="2" class="text-center"><em>Tidak ada pemasukan pada periode ini.</em></td>
+                                </tr>
+                            @endforelse
+                            <tr class="bg-light">
+                                <td class="font-weight-bold text-right">Total Pemasukan</td>
+                                <td class="font-weight-bold text-right text-success">Rp{{ number_format($totalPemasukan, 0, ',', '.') }}</td>
                             </tr>
                         </tbody>
+
+                        {{-- Bagian Pengeluaran --}}
+                        <thead class="thead-light mt-4">
+                            <tr>
+                                <th><i class="fas fa-arrow-up text-danger mr-2"></i> Uraian Pengeluaran</th>
+                                <th class="text-right">Jumlah</th>
+                            </tr>
+                        </thead>
+                         <tbody>
+                            @forelse ($detailPengeluaran as $item)
+                                <tr>
+                                    <td class="pl-4"><small>{{ $item->keterangan }}</small></td>
+                                    <td class="text-right">Rp{{ number_format($item->total, 0, ',', '.') }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="2" class="text-center"><em>Tidak ada pengeluaran pada periode ini.</em></td>
+                                </tr>
+                            @endforelse
+                            <tr class="bg-light">
+                                <td class="font-weight-bold text-right">Total Pengeluaran</td>
+                                <td class="font-weight-bold text-right text-danger">(-) Rp{{ number_format($totalPengeluaran, 0, ',', '.') }}</td>
+                            </tr>
+                        </tbody>
+
+                         {{-- Bagian Ringkasan Akhir --}}
+                        <tfoot style="background-color: #e9ecef;">
+                            <tr>
+                                <td class="font-weight-bold text-right">LABA KOTOR (Pemasukan - Pengeluaran)</td>
+                                <td class="font-weight-bold text-right">Rp{{ number_format($labaKotor, 0, ',', '.') }}</td>
+                            </tr>
+                            <tr>
+                                <td class="font-weight-bold text-right">Total Piutang (Tagihan Belum Dibayar)</td>
+                                <td class="font-weight-bold text-right text-warning">(-) Rp{{ number_format($totalPiutang, 0, ',', '.') }}</td>
+                            </tr>
+                             <tr class="bg-info text-white">
+                                <td class="font-weight-bold text-right">PERKIRAAN SALDO BERSIH (Kas di Tangan)</td>
+                                <td class="font-weight-bold text-right">Rp{{ number_format($saldoBersih, 0, ',', '.') }}</td>
+                            </tr>
+                             <tr class="bg-primary text-white">
+                                <td class="font-weight-bold text-right">TOTAL ASET PERIODE INI (Kas + Piutang)</td>
+                                <td class="font-weight-bold text-right">Rp{{ number_format($totalAset, 0, ',', '.') }}</td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
-                <div class="alert alert-info mt-3">
+
+                 <div class="alert alert-info mt-3">
                     <i class="icon fas fa-info-circle"></i>
-                    <strong>Catatan:</strong> "Perkiraan Saldo Bersih" adalah Laba Kotor dikurangi semua total tagihan yang belum dibayar (Piutang). Angka ini memberikan gambaran kas yang seharusnya Anda miliki jika semua piutang tidak ada.
+                    <strong>Catatan:</strong> "Total Aset Periode Ini" adalah representasi dari Laba Kotor Anda (Pemasukan dikurangi Pengeluaran). Angka ini menunjukkan nilai total yang dihasilkan, baik dalam bentuk kas maupun tagihan yang belum dibayar.
                 </div>
             </div>
         </div>

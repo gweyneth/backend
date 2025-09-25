@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Transaksi;
+use App\Models\TransaksiDetail;
 use App\Models\Pengeluaran;
 use Carbon\Carbon;
 
@@ -12,48 +13,60 @@ class RekapitulasiController extends Controller
     public function index(Request $request)
     {
         // Variabel default
-        $totalPemasukan = 0;
-        $totalPengeluaran = 0;
-        $periodeJudul = ''; // Judul untuk ditampilkan di view
+        $periodeJudul = '';
         $selectedMonth = $request->input('bulan', Carbon::now()->format('Y-m'));
 
-        // 1. Cek jenis filter yang dipilih pengguna
+        // Query Builder untuk Pemasukan dan Pengeluaran
+        $pemasukanQuery = TransaksiDetail::with('produk', 'transaksi');
+        $pengeluaranQuery = Pengeluaran::query();
+
+        // Cek jenis filter
         if ($request->has('periode') && $request->input('periode') === 'all') {
-            // JIKA PENGGUNA MEMILIH "TAMPILKAN SEMUA"
             $periodeJudul = 'Semua Waktu';
-            $totalPemasukan = Transaksi::sum('total');
-            $totalPengeluaran = Pengeluaran::sum('total');
-            // Kosongkan selectedMonth agar tidak menyorot bulan tertentu
             $selectedMonth = null;
+            // Tidak ada filter tanggal yang diterapkan
         } else {
-            // JIKA PENGGUNA MEMFILTER PER BULAN (LOGIKA SEBELUMNYA)
             $carbonMonth = Carbon::parse($selectedMonth);
             $startDate = $carbonMonth->startOfMonth()->copy();
             $endDate = $carbonMonth->endOfMonth()->copy();
-
-            // Format judul periode ke dalam Bahasa Indonesia (contoh: September 2025)
             $periodeJudul = $carbonMonth->isoFormat('MMMM YYYY');
 
-            $totalPemasukan = Transaksi::whereBetween('tanggal_order', [$startDate, $endDate])->sum('total');
-            $totalPengeluaran = Pengeluaran::whereBetween('created_at', [$startDate, $endDate])->sum('total');
+            // Terapkan filter tanggal ke query
+            $pemasukanQuery->whereHas('transaksi', function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('tanggal_order', [$startDate, $endDate]);
+            });
+            $pengeluaranQuery->whereBetween('created_at', [$startDate, $endDate]);
         }
 
-        // 2. Hitung Total Piutang (ini selalu total keseluruhan, tidak terpengaruh filter)
+        // --- AMBIL DATA DETAIL & HITUNG TOTAL ---
+
+        // 1. Pemasukan
+        $detailPemasukan = $pemasukanQuery->get();
+        $totalPemasukan = $detailPemasukan->sum('total');
+
+        // 2. Pengeluaran
+        $detailPengeluaran = $pengeluaranQuery->get();
+        $totalPengeluaran = $detailPengeluaran->sum('total');
+
+        // 3. Piutang (selalu total keseluruhan)
         $totalPiutang = Transaksi::where('sisa', '>', 0)->sum('sisa');
 
-        // 3. Lakukan Kalkulasi Rekapitulasi
+        // --- KALKULASI REKAPITULASI ---
         $labaKotor = $totalPemasukan - $totalPengeluaran;
         $saldoBersih = $labaKotor - $totalPiutang;
+        $totalAset = $labaKotor; // Seperti penjelasan di atas
 
-        // 4. Kirim semua data ke View
         return view('pages.laporan.rekapitulasi.index', compact(
             'selectedMonth',
-            'periodeJudul', // Kirim judul ke view
+            'periodeJudul',
             'totalPemasukan',
             'totalPengeluaran',
             'labaKotor',
             'totalPiutang',
-            'saldoBersih'
+            'saldoBersih',
+            'totalAset',
+            'detailPemasukan',   // Kirim data detail ke view
+            'detailPengeluaran'  // Kirim data detail ke view
         ));
     }
 }
