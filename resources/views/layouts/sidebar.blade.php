@@ -185,6 +185,13 @@
                                     <p>Omset Penjualan</p>
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a href="{{ route('rekapitulasi.index') }}"
+                                    class="nav-link {{ Request::is('rekapitulasi*') ? 'active' : '' }}">
+                                    <i class="far fa-circle nav-icon text-primary"></i>
+                                    <p>Rekapitulasi</p>
+                                </a>
+                            </li>
                         </ul>
                     </li>
                     <li class="nav-item">

@@ -32,7 +32,7 @@
                         <div class="mb-3">
                             <label for="pelanggan_id" class="form-label">Nama Pemesan</label>
                             <select name="pelanggan_id" id="pelanggan_id"
-                                class="form-select @error('pelanggan_id') is-invalid @enderror" required>
+                                class="form-control @error('pelanggan_id') is-invalid @enderror" required>
                                 <option value="">Pilih Pelanggan</option>
                                 @foreach ($pelanggan as $item)
                                 <option value="{{ $item->id }}" data-alamat="{{ $item->alamat }}"
@@ -117,7 +117,7 @@
                                 <label for="status_pengerjaan" class="col-sm-4 col-form-label">Status Pengerjaan</label>
                                 <div class="col-sm-8">
                                     <select name="status_pengerjaan" id="status_pengerjaan"
-                                        class="form-select @error('status_pengerjaan') is-invalid @enderror" required>
+                                        class="form-control @error('status_pengerjaan') is-invalid @enderror" required>
                                         <option value="menunggu export"
                                             {{ old('status_pengerjaan') == 'menunggu export' ? 'selected' : '' }}>Menunggu Export
                                         </option>

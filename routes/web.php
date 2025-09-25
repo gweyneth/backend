@@ -20,6 +20,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\TestimonialController;
 use App\Http\Controllers\BackgroundController;
+use App\Http\Controllers\RekapitulasiController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -46,6 +47,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('gaji/{id}/print', [GajiKaryawanController::class, 'print'])->name('gaji.print');
         Route::get('piutang', [TransaksiController::class, 'piutangIndex'])->name('piutang.index');
         Route::get('pendapatan', [TransaksiController::class, 'pendapatanIndex'])->name('pendapatan.index');
+        Route::get('rekapitulasi', [App\Http\Controllers\RekapitulasiController::class, 'index'])->name('rekapitulasi.index');
         Route::get('pendapatan/print-pdf', [TransaksiController::class, 'printPendapatanPdf'])->name('pendapatan.print-pdf');
         // Route::get('kasbon-karyawan', [KasbonKaryawanController::class, 'index'])->name('kasbon-karyawan.index');
         Route::get('omset-penjualan', [OmsetPenjualanController::class, 'index'])->name('omset.index');
