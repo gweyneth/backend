@@ -59,17 +59,13 @@
                                     <p>Gaji Karyawan</p>
                                 </a>
                             </li>
-                            {{-- <li class="nav-item">
-                            <a href="{{ route('kasbon-karyawan.index') }}"
-                                class="nav-link {{ Request::is('kasbon-karyawan*') ? 'active' : '' }}">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Kasbon Karyawan</p>
-                            </a>
-                        </li> --}}
                         </ul>
                     </li>
                 @endif {{-- End of Admin Menu --}}
-                {{-- @if (Auth::check() && Auth::user()->isKasir()) jika hanya kasir --}}
+
+                {{-- PERUBAHAN DIMULAI DI SINI --}}
+
+                {{-- Menu untuk Admin dan Kasir --}}
                 @if (Auth::check() && (Auth::user()->isAdmin() || Auth::user()->isKasir()))
                     <li class="nav-item">
                         <a href="{{ route('pelanggan.index') }}"
@@ -78,32 +74,9 @@
                             <p>Data Pelanggan</p>
                         </a>
                     </li>
-                    <li class="nav-item has-treeview {{ Request::is('transaksi*') ? 'menu-open' : '' }}">
-                        <a href="#" class="nav-link {{ Request::is('transaksi*') ? 'active' : '' }}">
-                            <i class="nav-icon fas fa-exchange-alt"></i>
-                            <p>
-                                Transaksi
-                                <i class="right fas fa-angle-left"></i>
-                            </p>
-                        </a>
-                        <ul class="nav nav-treeview">
-                            <li class="nav-item">
-                                <a href="{{ route('transaksi.create') }}"
-                                    class="nav-link {{ Request::is('transaksi/create') ? 'active' : '' }}">
-                                    <i class="far fa-circle nav-icon"></i>
-                                    <p>Transaksi Baru</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('transaksi.index') }}"
-                                    class="nav-link {{ Request::is('transaksi*') && !Request::is('transaksi/create') ? 'active' : '' }}">
-                                    <i class="far fa-circle nav-icon"></i>
-                                    <p>Log Transaksi</p>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                @endif {{-- End of Kasir Menu --}}
+                @endif
+
+                {{-- Menu khusus Admin (termasuk Data Produk) --}}
                 @if (Auth::check() && Auth::user()->isAdmin())
                     <li
                         class="nav-item has-treeview {{ Request::is('produk*') || Request::is('kategoribarang*') || Request::is('bahan*') || Request::is('satuan*') ? 'menu-open' : '' }}">
@@ -146,6 +119,39 @@
                             </li>
                         </ul>
                     </li>
+                @endif
+                
+                {{-- Menu Transaksi (dipindah ke sini) --}}
+                @if (Auth::check() && (Auth::user()->isAdmin() || Auth::user()->isKasir()))
+                    <li class="nav-item has-treeview {{ Request::is('transaksi*') ? 'menu-open' : '' }}">
+                        <a href="#" class="nav-link {{ Request::is('transaksi*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-exchange-alt"></i>
+                            <p>
+                                Transaksi
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ route('transaksi.create') }}"
+                                    class="nav-link {{ Request::is('transaksi/create') ? 'active' : '' }}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Transaksi Baru</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('transaksi.index') }}"
+                                    class="nav-link {{ Request::is('transaksi*') && !Request::is('transaksi/create') ? 'active' : '' }}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Log Transaksi</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                @endif
+
+                {{-- Menu sisa khusus Admin --}}
+                @if (Auth::check() && Auth::user()->isAdmin())
                     <li
                         class="nav-item has-treeview {{ Request::is('pengeluaran*') || Request::is('pendapatan*') || Request::is('piutang*') ? 'menu-open' : '' }}">
                         <a href="#"
@@ -243,7 +249,6 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    {{-- PERBAIKAN: Link ini sekarang memanggil fungsi logout yang sama dengan di navbar --}}
                     <a href="{{ route('logout') }}" class="nav-link"
                         onclick="event.preventDefault(); confirmLogoutNavbar(event);">
                         <i class="nav-icon fas fa-sign-out-alt"></i>
@@ -255,13 +260,14 @@
     </div>
 </aside>
 
-{{-- Tambahkan script SweetAlert untuk konfirmasi logout di sini atau di layouts.app Anda --}}
+{{-- Pastikan script ini ada di file layout utama Anda --}}
 @push('scripts')
-    {{-- Pastikan layouts.app memiliki @stack('scripts') --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        function confirmLogout(event) {
-            event.preventDefault(); // Mencegah submit form default
+        // Pastikan fungsi ini tersedia secara global atau di-scope yang benar
+        function confirmLogoutNavbar(event) {
+            event.preventDefault();
+            const link = event.currentTarget.href; // Dapatkan URL logout dari link
             Swal.fire({
                 title: 'Konfirmasi Logout',
                 text: "Apakah Anda yakin ingin keluar dari aplikasi?",
@@ -273,7 +279,18 @@
                 cancelButtonText: 'Batal'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    document.getElementById('logout-form-sidebar').submit();
+                    // Buat form secara dinamis untuk logout agar tetap menggunakan metode POST
+                    let form = document.createElement('form');
+                    form.action = "{{ route('logout') }}";
+                    form.method = 'POST';
+                    form.style.display = 'none';
+                    // Tambahkan CSRF token
+                    let csrf = document.createElement('input');
+                    csrf.name = '_token';
+                    csrf.value = '{{ csrf_token() }}';
+                    form.appendChild(csrf);
+                    document.body.appendChild(form);
+                    form.submit();
                 }
             });
         }

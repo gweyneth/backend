@@ -65,8 +65,8 @@ class RekapitulasiController extends Controller
             'totalPiutang',
             'saldoBersih',
             'totalAset',
-            'detailPemasukan',   // Kirim data detail ke view
-            'detailPengeluaran'  // Kirim data detail ke view
+            'detailPemasukan',  
+            'detailPengeluaran'  
         ));
     }
 }
