@@ -25,9 +25,8 @@ class TransaksiController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
-        // PERBAIKAN UTAMA: Menggunakan orderBy('id', 'desc') untuk memastikan data terbaru selalu di atas.
-        // Ini lebih pasti daripada latest() yang bergantung pada kolom created_at.
-        $query = Transaksi::with(['pelanggan'])->orderBy('id', 'desc');
+        // PERUBAHAN UTAMA: Menggunakan orderBy('id', 'asc') untuk menampilkan data terlama (paling awal input) di atas.
+        $query = Transaksi::with(['pelanggan'])->orderBy('id', 'asc');
 
         // Terapkan filter
         if ($searchQuery) {
@@ -49,7 +48,7 @@ class TransaksiController extends Controller
         $totalKeseluruhanTransaksi = $query->clone()->sum('total');
         $totalPiutang = $query->clone()->sum('sisa');
 
-        $transaksi = $query->paginate($limit)->withQueryString(); // Tambahkan withQueryString agar filter tetap saat pindah halaman
+        $transaksi = $query->paginate($limit)->withQueryString(); 
 
         // Data untuk modal pelunasan
         $rekening = Rekening::all();
@@ -173,7 +172,6 @@ class TransaksiController extends Controller
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
-            // Tampilkan pesan error yang lebih ramah di production
             return redirect()->back()->with('error', 'Terjadi kesalahan server: ' . $e->getMessage())->withInput();
         }
     }
@@ -293,13 +291,10 @@ class TransaksiController extends Controller
         }
     }
 
-
-
     public function pelunasan(Request $request, int $id)
     {
         $transaksi = Transaksi::findOrFail($id);
 
-        // PERBAIKAN: Menambahkan 'qris' ke dalam validasi metode pembayaran.
         $validatedData = $request->validate([
             'jumlah_bayar' => 'required|numeric|min:0',
             'metode_pembayaran' => 'required|in:tunai,transfer_bank,qris',
@@ -324,7 +319,6 @@ class TransaksiController extends Controller
 
         $jumlahBayar = $validatedData['jumlah_bayar'];
 
-        // Cek jika pembayaran melebihi sisa
         if ($jumlahBayar > $transaksi->sisa) {
             return redirect()->back()->with('error', 'Jumlah pembayaran melebihi sisa tagihan.');
         }
@@ -382,7 +376,6 @@ class TransaksiController extends Controller
             return response()->json(['error' => 'Gagal menghapus. Transaksi ini mungkin terkait dengan data lain.'], 500);
         }
     }
-
 
     public function getProductDetails(Request $request)
     {
@@ -479,7 +472,6 @@ class TransaksiController extends Controller
             $q->where('rekening_id', $request->input('rekening_id'));
         });
 
-        // PERBAIKAN: Total pendapatan adalah jumlah uang yang masuk (uang_muka), bukan total nilai transaksi.
         $totalPendapatan = $query->clone()->sum('uang_muka');
 
         $pendapatanTransaksi = $query->paginate(15)->withQueryString();
@@ -515,13 +507,9 @@ class TransaksiController extends Controller
         return view('pages.transaksi.invoice', compact('transaksi', 'perusahaan'));
     }
 
-    // PERBAIKAN: Menambahkan Request $request agar bisa menerima filter
     public function exportExcel(Request $request)
     {
-        // Nama file Excel yang akan di-download
         $fileName = 'transaksi_' . date('Ymd_His') . '.xlsx';
-        
-        // Pastikan class TransaksiExport Anda bisa menerima filter dari request
         return Excel::download(new TransaksiExport($request->query()), $fileName);
     }
 }
