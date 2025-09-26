@@ -25,7 +25,7 @@
 
                 <form action="{{ route('transaksi.update', $transaksi->id) }}" method="POST" id="transaksi-form">
                     @csrf
-                    @method('PUT') {{-- Menggunakan method PUT untuk update --}}
+                    @method('PUT')
                     <input type="hidden" name="no_transaksi" value="{{ $transaksi->no_transaksi }}">
 
                     <div class="row">
@@ -79,15 +79,13 @@
                         <div class="col-md-9">
                             <h6>Detail Produk</h6>
                             <div id="produk-items-container">
-                                {{-- Loop melalui detail transaksi yang sudah ada --}}
                                 @forelse ($transaksi->transaksiDetails as $index => $detail)
                                     @include('pages.transaksi.produk_item_row', [
                                         'index' => $index,
                                         'produks' => $produks,
-                                        'detail' => $detail // Mengirimkan data detail ke partial
+                                        'detail' => $detail
                                     ])
                                 @empty
-                                    {{-- Jika tidak ada detail, tampilkan satu baris kosong --}}
                                     @include('pages.transaksi.produk_item_row', ['index' => 0, 'produks' => $produks])
                                 @endforelse
                             </div>
@@ -100,17 +98,19 @@
                                 <input type="text" name="total_keseluruhan" id="total_keseluruhan" class="form-control" value="{{ old('total_keseluruhan', $transaksi->total) }}" readonly>
                             </div>
 
+                            {{-- PERBAIKAN: Mengubah type="number" menjadi type="text" --}}
                             <div class="form-group">
                                 <label for="uang_muka">Uang Muka</label>
-                                <input type="number" name="uang_muka" id="uang_muka" class="form-control @error('uang_muka') is-invalid @enderror" value="{{ old('uang_muka', $transaksi->uang_muka) }}" min="0" step="0.01">
+                                <input type="text" name="uang_muka" id="uang_muka" class="form-control currency @error('uang_muka') is-invalid @enderror" value="{{ old('uang_muka', $transaksi->uang_muka) }}">
                                 @error('uang_muka')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
 
+                            {{-- PERBAIKAN: Mengubah type="number" menjadi type="text" --}}
                             <div class="form-group">
                                 <label for="diskon">Diskon</label>
-                                <input type="number" name="diskon" id="diskon" class="form-control @error('diskon') is-invalid @enderror" value="{{ old('diskon', $transaksi->diskon) }}" min="0" step="0.01">
+                                <input type="text" name="diskon" id="diskon" class="form-control currency @error('diskon') is-invalid @enderror" value="{{ old('diskon', $transaksi->diskon) }}">
                                 @error('diskon')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -151,169 +151,176 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+{{-- PERBAIKAN: Seluruh blok JavaScript di bawah ini telah dirombak total --}}
 <script>
-    // Inisialisasi indeks produk, untuk baris baru yang ditambahkan
-    // Jika ada old input, gunakan jumlahnya. Jika tidak, gunakan jumlah detail + 1.
-    let produkItemIndex = {{ old('nama_produk') ? count(old('nama_produk')) : ($transaksi->transaksiDetails->count() > 0 ? $transaksi->transaksiDetails->count() : 1) }};
+document.addEventListener('DOMContentLoaded', function() {
+    // =================================================================================
+    // BAGIAN 1: FUNGSI-FUNGSI UTAMA (FORMATTING & PARSING)
+    // =================================================================================
 
-    document.addEventListener('DOMContentLoaded', function() {
-        // Inisialisasi data pelanggan
-        const pelangganSelect = document.getElementById('pelanggan_id');
-        const alamatPelangganInput = document.getElementById('alamat_pelanggan');
-        const telpPelangganInput = document.getElementById('telp_pelanggan');
+    // Fungsi BARU dan MODERN untuk format ke Rupiah
+    function formatRupiah(angka) {
+        if (isNaN(angka) || angka === null || angka === '') return 'Rp 0';
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(angka);
+    }
 
-        function updatePelangganInfo() {
-            const selectedOption = pelangganSelect.options[pelangganSelect.selectedIndex];
-            if (selectedOption) {
-                alamatPelangganInput.value = selectedOption.dataset.alamat || '';
-                telpPelangganInput.value = selectedOption.dataset.telp || '';
+    // Fungsi BARU dan AMAN untuk mengubah format Rupiah kembali ke angka
+    function parseRupiah(rupiahString) {
+        if (typeof rupiahString !== 'string') {
+            rupiahString = rupiahString.toString();
+        }
+        // Menghapus semua karakter kecuali digit
+        return parseFloat(rupiahString.replace(/[^0-9]/g, '')) || 0;
+    }
+
+
+    // =================================================================================
+    // BAGIAN 2: KALKULASI UTAMA
+    // =================================================================================
+
+    // Fungsi untuk menghitung total dari semua baris produk
+    function calculateGrandTotal() {
+        let grandTotal = 0;
+        document.querySelectorAll('.produk-item .item-total').forEach(function(totalInput) {
+            grandTotal += parseRupiah(totalInput.value);
+        });
+        document.getElementById('total_keseluruhan').value = formatRupiah(grandTotal);
+        calculateSisa(); // Panggil kalkulasi sisa setiap total berubah
+    }
+
+    // Fungsi untuk menghitung sisa pembayaran
+    function calculateSisa() {
+        const grandTotal = parseRupiah(document.getElementById('total_keseluruhan').value);
+        const uangMuka = parseRupiah(document.getElementById('uang_muka').value);
+        const diskon = parseRupiah(document.getElementById('diskon').value);
+
+        let sisa = grandTotal - uangMuka - diskon;
+        if (sisa < 0) sisa = 0;
+
+        document.getElementById('sisa').value = formatRupiah(sisa);
+    }
+
+
+    // =================================================================================
+    // BAGIAN 3: PENGATURAN EVENT LISTENER PADA SETIAP BARIS PRODUK
+    // =================================================================================
+
+    function initializeProdukRow(row) {
+        // Ambil semua elemen input dari baris
+        const produkSelect = row.querySelector('.produk-name');
+        const produkIdInput = row.querySelector('.produk-id');
+        const qtyInput = row.querySelector('.item-qty');
+        const priceInput = row.querySelector('.item-price');
+        const totalInput = row.querySelector('.item-total');
+
+        // Fungsi untuk menghitung total per item
+        function calculateItemTotal() {
+            const qty = parseFloat(qtyInput.value) || 0;
+            const price = parseRupiah(priceInput.value);
+            const itemTotal = qty * price;
+            totalInput.value = formatRupiah(itemTotal);
+            calculateGrandTotal(); // Hitung ulang total keseluruhan
+        }
+
+        // Event listener untuk perubahan pilihan produk (dropdown)
+        produkSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption && selectedOption.value) {
+                produkIdInput.value = selectedOption.dataset.id || '';
+                // Set harga dan format langsung
+                priceInput.value = formatRupiah(parseFloat(selectedOption.dataset.harga) || 0);
             } else {
-                alamatPelangganInput.value = '';
-                telpPelangganInput.value = '';
+                produkIdInput.value = '';
+                priceInput.value = formatRupiah(0);
             }
-        }
-
-        pelangganSelect.addEventListener('change', updatePelangganInfo);
-        // Panggil saat DOMContentLoaded untuk mengisi data awal
-        updatePelangganInfo();
-
-        // Fungsi untuk format Rupiah
-        function formatRupiah(angka) {
-            if (angka === null || angka === undefined || isNaN(angka)) {
-                return 'Rp 0';
-            }
-            var reverse = angka.toString().split('').reverse().join(''),
-                ribuan = reverse.match(/\d{1,3}/g);
-            ribuan = ribuan.join('.').split('').reverse().join('');
-            return 'Rp ' + ribuan;
-        }
-
-        // Fungsi untuk menghitung total keseluruhan dan sisa pembayaran
-        function calculateGrandTotalAndRemaining() {
-            let grandTotal = 0;
-            document.querySelectorAll('.item-total').forEach(function(element) {
-                // Ambil nilai numerik dari input (tanpa format Rupiah)
-                grandTotal += parseFloat(element.value.replace(/[^0-9,-]+/g,"").replace(",", ".")) || 0;
-            });
-
-            document.getElementById('total_keseluruhan').value = formatRupiah(grandTotal);
-
-            const uangMuka = parseFloat(document.getElementById('uang_muka').value) || 0;
-            const diskon = parseFloat(document.getElementById('diskon').value) || 0;
-
-            let sisa = grandTotal - uangMuka - diskon;
-            if (sisa < 0) sisa = 0; // Pastikan sisa tidak negatif
-
-            document.getElementById('sisa').value = formatRupiah(sisa);
-        }
-
-        // Event listener untuk uang muka dan diskon
-        document.getElementById('uang_muka').addEventListener('input', calculateGrandTotalAndRemaining);
-        document.getElementById('diskon').addEventListener('input', calculateGrandTotalAndRemaining);
-
-
-        // Fungsi untuk menambahkan baris produk baru
-        document.getElementById('add-produk-item').addEventListener('click', function() {
-            const container = document.getElementById('produk-items-container');
-            fetch('/transaksi/get-produk-item-row?index=' + produkItemIndex)
-                .then(response => {
-                    if (!response.ok) {
-                        return response.text().then(text => { throw new Error(text) });
-                    }
-                    return response.text();
-                })
-                .then(html => {
-                    container.insertAdjacentHTML('beforeend', html);
-                    initializeProdukRow(produkItemIndex);
-                    produkItemIndex++;
-                    calculateGrandTotalAndRemaining();
-                })
-                .catch(error => {
-                    console.error('Error adding product row:', error);
-                    alert('Gagal menambahkan baris produk. Silakan cek konsol browser untuk detail error.');
-                });
+            calculateItemTotal();
         });
 
-        // Fungsi untuk menghapus baris produk
-        document.getElementById('produk-items-container').addEventListener('click', function(e) {
-            if (e.target.classList.contains('remove-produk-item') || e.target.closest('.remove-produk-item')) {
-                const row = e.target.closest('.produk-item');
-                if (row) {
-                    row.remove();
-                    calculateGrandTotalAndRemaining();
-                }
-            }
+        // Event listener untuk Qty dan Harga
+        qtyInput.addEventListener('input', calculateItemTotal);
+        priceInput.addEventListener('input', function() {
+            // Saat user mengetik harga, format langsung
+            const numericValue = parseRupiah(this.value);
+            this.value = formatRupiah(numericValue);
+            calculateItemTotal();
+        });
+        // Format harga saat kehilangan fokus juga
+        priceInput.addEventListener('blur', function() {
+            const numericValue = parseRupiah(this.value);
+            this.value = formatRupiah(numericValue);
         });
 
-        // Fungsi untuk menginisialisasi event listener pada baris produk
-        function initializeProdukRow(index) {
-            const row = document.querySelector(`.produk-item[data-index="${index}"]`);
-            if (!row) return;
+        // Inisialisasi format harga dan kalkulasi total untuk baris ini
+        priceInput.value = formatRupiah(parseRupiah(priceInput.value));
+        calculateItemTotal();
+    }
 
-            const produkSelect = row.querySelector('.produk-name');
-            const produkIdInput = row.querySelector('.produk-id');
-            const produkBahanInput = row.querySelector('.produk-bahan');
-            const produkUkuranInput = row.querySelector('.produk-ukuran');
-            const produkSatuanInput = row.querySelector('.produk-satuan');
-            const itemQtyInput = row.querySelector('.item-qty');
-            const itemPriceInput = row.querySelector('.item-price');
-            const itemTotalInput = row.querySelector('.item-total');
 
-            // Event listener untuk perubahan pilihan produk di select
-            produkSelect.addEventListener('change', function() {
-                const selectedOption = this.options[this.selectedIndex];
-                if (selectedOption && selectedOption.value) { // Pastikan opsi dipilih dan bukan "Pilih Produk"
-                    produkIdInput.value = selectedOption.dataset.id || '';
-                    produkBahanInput.value = selectedOption.dataset.bahan || '';
-                    produkUkuranInput.value = selectedOption.dataset.ukuran || '';
-                    produkSatuanInput.value = selectedOption.dataset.satuan || '';
-                    itemPriceInput.value = parseFloat(selectedOption.dataset.harga) || 0;
-                } else {
-                    // Reset jika tidak ada pilihan yang cocok atau "Pilih Produk" dipilih
-                    produkIdInput.value = '';
-                    produkBahanInput.value = '';
-                    produkUkuranInput.value = '';
-                    produkSatuanInput.value = '';
-                    itemPriceInput.value = 0;
-                }
-                calculateItemTotal(row);
-            });
+    // =================================================================================
+    // BAGIAN 4: INISIALISASI HALAMAN DAN EVENT UTAMA
+    // =================================================================================
 
-            // Event listener untuk perubahan Qty dan Harga
-            itemQtyInput.addEventListener('input', function() { calculateItemTotal(row); });
-            itemPriceInput.addEventListener('input', function() { calculateItemTotal(row); });
+    // Inisialisasi semua baris produk yang sudah ada saat halaman dimuat
+    document.querySelectorAll('.produk-item').forEach(row => initializeProdukRow(row));
 
-            // Fungsi untuk menghitung total per item
-            function calculateItemTotal(rowElement) {
-                const qty = parseFloat(rowElement.querySelector('.item-qty').value) || 0;
-                const price = parseFloat(rowElement.querySelector('.item-price').value) || 0;
-                const itemTotal = qty * price;
-                rowElement.querySelector('.item-total').value = itemTotal; // Simpan sebagai angka untuk perhitungan grand total
-                rowElement.querySelector('.item-total').value = formatRupiah(itemTotal); // Tampilkan dalam format Rupiah
-                calculateGrandTotalAndRemaining(); // Hitung ulang total keseluruhan
-            }
+    // Event listener untuk Uang Muka dan Diskon
+    const uangMukaInput = document.getElementById('uang_muka');
+    const diskonInput = document.getElementById('diskon');
 
-            // Panggil perhitungan awal untuk baris ini
-            calculateItemTotal(row);
-
-            // Trigger change event pada select produk jika ada nilai yang sudah dipilih (misal dari old input atau data transaksi)
-            if (produkSelect.value) {
-                produkSelect.dispatchEvent(new Event('change'));
-            }
-        }
-
-        // Inisialisasi baris produk yang sudah ada (dari $transaksi->transaksiDetails atau old input)
-        document.querySelectorAll('.produk-item').forEach(function(row) {
-            const index = row.dataset.index;
-            initializeProdukRow(index);
+    [uangMukaInput, diskonInput].forEach(input => {
+        input.addEventListener('input', function() {
+            const numericValue = parseRupiah(this.value);
+            this.value = formatRupiah(numericValue);
+            calculateSisa();
         });
-
-        // Panggil perhitungan total keseluruhan saat halaman dimuat
-        calculateGrandTotalAndRemaining();
+        input.addEventListener('blur', function() {
+            this.value = formatRupiah(parseRupiah(this.value));
+        });
+        // Format nilai awal saat halaman dimuat
+        input.value = formatRupiah(parseRupiah(input.value));
     });
+
+    // Event listener untuk tombol 'Tambah Baris Produk'
+    let produkItemIndex = document.querySelectorAll('.produk-item').length;
+    document.getElementById('add-produk-item').addEventListener('click', function() {
+        fetch('/transaksi/get-produk-item-row?index=' + produkItemIndex)
+            .then(response => response.text())
+            .then(html => {
+                const container = document.getElementById('produk-items-container');
+                container.insertAdjacentHTML('beforeend', html);
+                const newRow = container.lastElementChild;
+                initializeProdukRow(newRow);
+                produkItemIndex++;
+                calculateGrandTotal();
+            })
+            .catch(error => console.error('Error adding product row:', error));
+    });
+
+    // Event listener untuk menghapus baris produk
+    document.getElementById('produk-items-container').addEventListener('click', function(e) {
+        if (e.target.closest('.remove-produk-item')) {
+            e.target.closest('.produk-item').remove();
+            calculateGrandTotal();
+        }
+    });
+
+    // Inisialisasi info pelanggan
+    const pelangganSelect = document.getElementById('pelanggan_id');
+    function updatePelangganInfo() {
+        const selectedOption = pelangganSelect.options[pelangganSelect.selectedIndex];
+        document.getElementById('alamat_pelanggan').value = selectedOption ? selectedOption.dataset.alamat || '' : '';
+        document.getElementById('telp_pelanggan').value = selectedOption ? selectedOption.dataset.telp || '' : '';
+    }
+    pelangganSelect.addEventListener('change', updatePelangganInfo);
+    updatePelangganInfo(); // Panggil saat awal
+    
+    // Panggil kalkulasi final saat halaman selesai dimuat
+    calculateGrandTotal();
+});
 </script>
 @endpush
