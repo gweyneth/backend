@@ -18,17 +18,30 @@ use App\Exports\PendapatanExport;
 
 class TransaksiController extends Controller
 {
+    /**
+     * PERBAIKAN: Fungsi baru untuk membersihkan format mata uang dengan aman.
+     */
+    private function cleanCurrencyValue($value)
+    {
+        if ($value === null) {
+            return null;
+        }
+        // 1. Hapus "Rp", spasi, dan titik (pemisah ribuan)
+        $cleaned = str_replace(['Rp', ' ', '.'], '', $value);
+        // 2. Ganti koma (pemisah desimal) dengan titik
+        $cleaned = str_replace(',', '.', $cleaned);
+        
+        return (float) $cleaned;
+    }
+
     public function index(Request $request)
     {
         $limit = $request->input('limit', 10);
         $searchQuery = $request->input('search_query');
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
-
-        // PERUBAHAN UTAMA: Menggunakan orderBy('id', 'asc') untuk menampilkan data terlama (paling awal input) di atas.
         $query = Transaksi::with(['pelanggan'])->orderBy('id', 'asc');
 
-        // Terapkan filter
         if ($searchQuery) {
             $query->where(function ($q) use ($searchQuery) {
                 $q->where('no_transaksi', 'like', '%' . $searchQuery . '%')
@@ -44,67 +57,49 @@ class TransaksiController extends Controller
             $query->whereDate('tanggal_order', '<=', $endDate);
         }
 
-        // Hitung total dari query yang sudah difilter sebelum paginasi
         $totalKeseluruhanTransaksi = $query->clone()->sum('total');
         $totalPiutang = $query->clone()->sum('sisa');
-
-        $transaksi = $query->paginate($limit)->withQueryString(); 
-
-        // Data untuk modal pelunasan
+        $transaksi = $query->paginate($limit)->withQueryString();
         $rekening = Rekening::all();
         $perusahaan = Perusahaan::first();
 
         return view('pages.transaksi.index', compact(
-            'transaksi',
-            'totalKeseluruhanTransaksi',
-            'totalPiutang',
-            'rekening',
-            'perusahaan',
-            'searchQuery',
-            'startDate',
-            'endDate',
-            'limit'
+            'transaksi', 'totalKeseluruhanTransaksi', 'totalPiutang', 'rekening', 'perusahaan',
+            'searchQuery', 'startDate', 'endDate', 'limit'
         ));
     }
-
 
     public function create()
     {
         $latestTransaksi = Transaksi::latest()->first();
         $nextNoTransaksi = $this->generateNoTransaksi($latestTransaksi ? $latestTransaksi->no_transaksi : null);
-
         $pelanggan = Pelanggan::all();
         $produks = Produk::all();
-
-        return view('pages.transaksi.create', compact(
-            'nextNoTransaksi',
-            'pelanggan',
-            'produks'
-        ));
+        return view('pages.transaksi.create', compact('nextNoTransaksi', 'pelanggan', 'produks'));
     }
 
     public function store(Request $request)
     {
         try {
+            // PERBAIKAN: Menggunakan fungsi cleanCurrencyValue
             $request->merge([
-                'total_keseluruhan' => (float) str_replace(['Rp ', '.'], '', $request->input('total_keseluruhan')),
-                'uang_muka' => (float) str_replace(['Rp ', '.'], '', $request->input('uang_muka')),
-                'diskon' => (float) str_replace(['Rp ', '.'], '', $request->input('diskon')),
-                'sisa' => (float) str_replace(['Rp ', '.'], '', $request->input('sisa')),
+                'total_keseluruhan' => $this->cleanCurrencyValue($request->input('total_keseluruhan')),
+                'uang_muka' => $this->cleanCurrencyValue($request->input('uang_muka')),
+                'diskon' => $this->cleanCurrencyValue($request->input('diskon')),
+                'sisa' => $this->cleanCurrencyValue($request->input('sisa')),
             ]);
 
             if ($request->has('harga') && is_array($request->input('harga'))) {
                 $cleanedHarga = [];
                 foreach ($request->input('harga') as $key => $value) {
-                    $cleanedHarga[$key] = (float) str_replace(['Rp ', '.'], '', $value);
+                    $cleanedHarga[$key] = $this->cleanCurrencyValue($value);
                 }
                 $request->merge(['harga' => $cleanedHarga]);
             }
-
             if ($request->has('total_item') && is_array($request->input('total_item'))) {
                 $cleanedTotalItem = [];
                 foreach ($request->input('total_item') as $key => $value) {
-                    $cleanedTotalItem[$key] = (float) str_replace(['Rp ', '.'], '', $value);
+                    $cleanedTotalItem[$key] = $this->cleanCurrencyValue($value);
                 }
                 $request->merge(['total_item' => $cleanedTotalItem]);
             }
@@ -119,7 +114,6 @@ class TransaksiController extends Controller
                 'diskon' => 'nullable|numeric|min:0',
                 'status_pengerjaan' => 'required|in:menunggu export,belum dikerjakan,proses desain,proses produksi,selesai',
             ]);
-
             $request->validate([
                 'produk_id.*' => 'nullable|exists:produk,id',
                 'nama_produk.*' => 'required|string|max:255',
@@ -132,7 +126,6 @@ class TransaksiController extends Controller
             ]);
 
             DB::beginTransaction();
-
             $sisaPembayaran = ($validatedTransaksi['total_keseluruhan'] - ($validatedTransaksi['uang_muka'] ?? 0) - ($validatedTransaksi['diskon'] ?? 0));
             if ($sisaPembayaran < 0) $sisaPembayaran = 0;
 
@@ -166,7 +159,6 @@ class TransaksiController extends Controller
 
             DB::commit();
             return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil disimpan!');
-
         } catch (ValidationException $e) {
             DB::rollBack();
             return redirect()->back()->withErrors($e->errors())->withInput();
@@ -176,48 +168,43 @@ class TransaksiController extends Controller
         }
     }
 
-
     public function show(int $id)
     {
         $transaksi = Transaksi::with(['pelanggan', 'transaksiDetails.produk'])->findOrFail($id);
         return view('pages.transaksi.show', compact('transaksi'));
     }
 
-
     public function edit(int $id)
     {
         $transaksi = Transaksi::with('transaksiDetails')->findOrFail($id);
         $pelanggan = Pelanggan::all();
         $produks = Produk::all();
-
         return view('pages.transaksi.edit', compact('transaksi', 'pelanggan', 'produks'));
     }
-
 
     public function update(Request $request, int $id)
     {
         $transaksi = Transaksi::findOrFail($id);
-
         try {
+            // PERBAIKAN: Menggunakan fungsi cleanCurrencyValue
             $request->merge([
-                'total_keseluruhan' => (float) str_replace(['Rp ', '.'], '', $request->input('total_keseluruhan')),
-                'uang_muka' => (float) str_replace(['Rp ', '.'], '', $request->input('uang_muka')),
-                'diskon' => (float) str_replace(['Rp ', '.'], '', $request->input('diskon')),
-                'sisa' => (float) str_replace(['Rp ', '.'], '', $request->input('sisa')),
+                'total_keseluruhan' => $this->cleanCurrencyValue($request->input('total_keseluruhan')),
+                'uang_muka' => $this->cleanCurrencyValue($request->input('uang_muka')),
+                'diskon' => $this->cleanCurrencyValue($request->input('diskon')),
+                'sisa' => $this->cleanCurrencyValue($request->input('sisa')),
             ]);
 
             if ($request->has('harga') && is_array($request->input('harga'))) {
                 $cleanedHarga = [];
                 foreach ($request->input('harga') as $key => $value) {
-                    $cleanedHarga[$key] = (float) str_replace(['Rp ', '.'], '', $value);
+                    $cleanedHarga[$key] = $this->cleanCurrencyValue($value);
                 }
                 $request->merge(['harga' => $cleanedHarga]);
             }
-
             if ($request->has('total_item') && is_array($request->input('total_item'))) {
                 $cleanedTotalItem = [];
                 foreach ($request->input('total_item') as $key => $value) {
-                    $cleanedTotalItem[$key] = (float) str_replace(['Rp ', '.'], '', $value);
+                    $cleanedTotalItem[$key] = $this->cleanCurrencyValue($value);
                 }
                 $request->merge(['total_item' => $cleanedTotalItem]);
             }
@@ -232,7 +219,6 @@ class TransaksiController extends Controller
                 'diskon' => 'nullable|numeric|min:0',
                 'status_pengerjaan' => 'required|in:menunggu export,belum dikerjakan,proses desain,proses produksi,selesai',
             ]);
-
             $request->validate([
                 'produk_id.*' => 'nullable|exists:produk,id',
                 'nama_produk.*' => 'required|string|max:255',
@@ -245,7 +231,6 @@ class TransaksiController extends Controller
             ]);
 
             DB::beginTransaction();
-
             $sisaPembayaran = ($validatedTransaksi['total_keseluruhan'] - ($validatedTransaksi['uang_muka'] ?? 0) - ($validatedTransaksi['diskon'] ?? 0));
             if ($sisaPembayaran < 0) $sisaPembayaran = 0;
 
@@ -262,7 +247,6 @@ class TransaksiController extends Controller
             ]);
 
             $transaksi->transaksiDetails()->delete();
-
             if ($request->has('nama_produk') && is_array($request->input('nama_produk'))) {
                 foreach ($request->input('nama_produk') as $key => $nama_produk) {
                     TransaksiDetail::create([
@@ -281,7 +265,6 @@ class TransaksiController extends Controller
 
             DB::commit();
             return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil diperbarui!');
-
         } catch (ValidationException $e) {
             DB::rollBack();
             return redirect()->back()->withErrors($e->errors())->withInput();
@@ -294,7 +277,6 @@ class TransaksiController extends Controller
     public function pelunasan(Request $request, int $id)
     {
         $transaksi = Transaksi::findOrFail($id);
-
         $validatedData = $request->validate([
             'jumlah_bayar' => 'required|numeric|min:0',
             'metode_pembayaran' => 'required|in:tunai,transfer_bank,qris',
@@ -305,20 +287,9 @@ class TransaksiController extends Controller
         ]);
 
         if ($validatedData['metode_pembayaran'] === 'transfer_bank') {
-            $request->validate([
-                'rekening_id' => 'required|exists:rekening,id',
-                'bukti_pembayaran' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-            ], [
-                'rekening_id.required' => 'Pilih rekening bank jika metode pembayaran adalah transfer.',
-                'bukti_pembayaran.required' => 'Bukti pembayaran wajib diunggah jika metode pembayaran adalah transfer.',
-                'bukti_pembayaran.image' => 'File bukti pembayaran harus berupa gambar.',
-                'bukti_pembayaran.mimes' => 'Format gambar yang diizinkan untuk bukti pembayaran: jpeg, png, jpg, gif.',
-                'bukti_pembayaran.max' => 'Ukuran gambar bukti pembayaran maksimal 2MB.',
-            ]);
+            $request->validate(['rekening_id' => 'required|exists:rekening,id', 'bukti_pembayaran' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',], ['rekening_id.required' => 'Pilih rekening bank jika metode pembayaran adalah transfer.', 'bukti_pembayaran.required' => 'Bukti pembayaran wajib diunggah jika metode pembayaran adalah transfer.', 'bukti_pembayaran.image' => 'File bukti pembayaran harus berupa gambar.', 'bukti_pembayaran.mimes' => 'Format gambar yang diizinkan untuk bukti pembayaran: jpeg, png, jpg, gif.', 'bukti_pembayaran.max' => 'Ukuran gambar bukti pembayaran maksimal 2MB.',]);
         }
-
         $jumlahBayar = $validatedData['jumlah_bayar'];
-
         if ($jumlahBayar > $transaksi->sisa) {
             return redirect()->back()->with('error', 'Jumlah pembayaran melebihi sisa tagihan.');
         }
@@ -328,26 +299,14 @@ class TransaksiController extends Controller
             $newUangMuka = $transaksi->uang_muka + $jumlahBayar;
             $newSisa = $transaksi->total - $newUangMuka - $transaksi->diskon;
             if ($newSisa < 0) $newSisa = 0;
-
             $pathBuktiPembayaran = $transaksi->bukti_pembayaran;
-
             if ($request->hasFile('bukti_pembayaran')) {
                 if ($transaksi->bukti_pembayaran && Storage::disk('public')->exists($transaksi->bukti_pembayaran)) {
                     Storage::disk('public')->delete($transaksi->bukti_pembayaran);
                 }
                 $pathBuktiPembayaran = $request->file('bukti_pembayaran')->store('bukti_pembayaran', 'public');
             }
-
-            $transaksi->update([
-                'uang_muka' => $newUangMuka,
-                'sisa' => $newSisa,
-                'id_pelunasan' => $validatedData['id_pelunasan'] ?? $transaksi->id_pelunasan,
-                'metode_pembayaran' => $validatedData['metode_pembayaran'],
-                'bukti_pembayaran' => $pathBuktiPembayaran,
-                'rekening_id' => $validatedData['rekening_id'] ?? null,
-                'keterangan_pembayaran' => $validatedData['keterangan_pembayaran'] ?? null,
-            ]);
-
+            $transaksi->update(['uang_muka' => $newUangMuka, 'sisa' => $newSisa, 'id_pelunasan' => $validatedData['id_pelunasan'] ?? $transaksi->id_pelunasan, 'metode_pembayaran' => $validatedData['metode_pembayaran'], 'bukti_pembayaran' => $pathBuktiPembayaran, 'rekening_id' => $validatedData['rekening_id'] ?? null, 'keterangan_pembayaran' => $validatedData['keterangan_pembayaran'] ?? null,]);
             DB::commit();
             return redirect()->route('transaksi.index')->with('success', 'Pembayaran pelunasan berhasil diproses!');
         } catch (ValidationException $e) {
@@ -381,23 +340,15 @@ class TransaksiController extends Controller
     {
         $produkId = $request->input('produk_id');
         $produkName = $request->input('nama_produk');
-
         $produk = null;
         if ($produkId) {
             $produk = Produk::find($produkId);
         } elseif ($produkName) {
             $produk = Produk::where('nama', $produkName)->first();
         }
-
         if ($produk) {
-            return response()->json([
-                'nama_produk' => $produk->nama,
-                'ukuran' => $produk->ukuran,
-                'satuan' => $produk->satuan ?? '',
-                'harga' => $produk->harga_jual,
-            ]);
+            return response()->json(['nama_produk' => $produk->nama, 'ukuran' => $produk->ukuran, 'satuan' => $produk->satuan ?? '', 'harga' => $produk->harga_jual,]);
         }
-
         return response()->json(null, 404);
     }
 
@@ -405,7 +356,6 @@ class TransaksiController extends Controller
     {
         $index = $request->input('index');
         $produks = Produk::all();
-
         return view('pages.transaksi.produk_item_row', compact('index', 'produks'));
     }
 
@@ -417,71 +367,43 @@ class TransaksiController extends Controller
 
         if ($lastNoTransaksi) {
             $lastDatePart = substr($lastNoTransaksi, 3, 6);
-
             if ($lastDatePart === $datePart) {
-                $lastNum = (int) substr($lastNoTransaksi, -10, 3);
+                $lastNum = (int) substr($lastNoTransaksi, -3);
                 $newNumber = $lastNum + 1;
             }
         }
-
         return $prefix . $datePart . '-' . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
     }
 
     public function piutangIndex()
     {
-        $piutangTransaksi = Transaksi::with('pelanggan')
-                                        ->where('sisa', '>', 0)
-                                        ->latest()
-                                        ->get();
-
+        $piutangTransaksi = Transaksi::with('pelanggan')->where('sisa', '>', 0)->latest()->get();
         $totalPiutang = $piutangTransaksi->sum('sisa');
-
         return view('pages.piutang.index', compact('piutangTransaksi', 'totalPiutang'));
     }
 
     public function pendapatanIndex(Request $request)
     {
-        $query = Transaksi::with(['pelanggan', 'rekening'])
-            ->where(function ($q) {
-                $q->where('sisa', '=', 0)
-                  ->orWhere('uang_muka', '>', 0);
-            })
-            ->latest('updated_at');
+        $query = Transaksi::with(['pelanggan', 'rekening'])->where(function ($q) {
+            $q->where('sisa', '=', 0)->orWhere('uang_muka', '>', 0);
+        })->latest('updated_at');
 
         $query->when($request->filled('search_query'), function ($q) use ($request) {
             $search = $request->input('search_query');
             $q->where(function ($subq) use ($search) {
-                $subq->where('no_transaksi', 'like', "%{$search}%")
-                     ->orWhereHas('pelanggan', fn($pelangganQuery) => $pelangganQuery->where('nama', 'like', "%{$search}%"));
+                $subq->where('no_transaksi', 'like', "%{$search}%")->orWhereHas('pelanggan', fn($pelangganQuery) => $pelangganQuery->where('nama', 'like', "%{$search}%"));
             });
         });
-
-        $query->when($request->filled('start_date'), function ($q) use ($request) {
-            $q->whereDate('updated_at', '>=', $request->input('start_date'));
-        });
-
-        $query->when($request->filled('end_date'), function ($q) use ($request) {
-            $q->whereDate('updated_at', '<=', $request->input('end_date'));
-        });
-
-        $query->when($request->filled('metode_pembayaran') && $request->input('metode_pembayaran') !== 'all', function ($q) use ($request) {
-            $q->where('metode_pembayaran', $request->input('metode_pembayaran'));
-        });
-
-        $query->when($request->input('metode_pembayaran') === 'transfer_bank' && $request->filled('rekening_id'), function ($q) use ($request) {
-            $q->where('rekening_id', $request->input('rekening_id'));
-        });
+        $query->when($request->filled('start_date'), fn($q) => $q->whereDate('updated_at', '>=', $request->input('start_date')));
+        $query->when($request->filled('end_date'), fn($q) => $q->whereDate('updated_at', '<=', $request->input('end_date')));
+        $query->when($request->filled('metode_pembayaran') && $request->input('metode_pembayaran') !== 'all', fn($q) => $q->where('metode_pembayaran', $request->input('metode_pembayaran')));
+        $query->when($request->input('metode_pembayaran') === 'transfer_bank' && $request->filled('rekening_id'), fn($q) => $q->where('rekening_id', $request->input('rekening_id')));
 
         $totalPendapatan = $query->clone()->sum('uang_muka');
-
         $pendapatanTransaksi = $query->paginate(15)->withQueryString();
         $rekening = Rekening::all();
 
-        return view('pages.pendapatan.index', compact(
-            'pendapatanTransaksi',
-            'totalPendapatan',
-            'rekening'
-        ));
+        return view('pages.pendapatan.index', compact('pendapatanTransaksi', 'totalPendapatan', 'rekening'));
     }
 
     public function exportExcelPendapatan(Request $request)
@@ -494,16 +416,13 @@ class TransaksiController extends Controller
     {
         $transaksi = Transaksi::with(['pelanggan', 'transaksiDetails.produk'])->findOrFail($id);
         $perusahaan = Perusahaan::first();
-
         return view('pages.transaksi.receipt', compact('transaksi', 'perusahaan'));
     }
-
 
     public function printInvoice(int $id)
     {
         $transaksi = Transaksi::with(['pelanggan', 'transaksiDetails.produk'])->findOrFail($id);
         $perusahaan = Perusahaan::first();
-
         return view('pages.transaksi.invoice', compact('transaksi', 'perusahaan'));
     }
 
