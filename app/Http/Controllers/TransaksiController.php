@@ -175,7 +175,7 @@ class TransaksiController extends Controller
                 ]);
 
                 $transaksi->transaksiDetails()->delete();
-                
+
                 if (isset($validatedData['nama_produk'])) {
                     foreach ($validatedData['nama_produk'] as $key => $nama_produk) {
                         TransaksiDetail::create([

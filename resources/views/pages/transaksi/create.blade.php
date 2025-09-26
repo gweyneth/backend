@@ -74,10 +74,10 @@
 
                     <div class="col-md-8">
                         <h6 class="mb-3 text-muted">Detail Produk</h6>
-                        <div id="produk-items-container" class="mb-3">
+                        <div id="produk-items-container">
                             @include('pages.transaksi.produk_item_row', ['index' => 0, 'produks' => $produks])
                         </div>
-                        <button type="button" class="btn btn-success btn-sm mb-4" id="add-produk-item">
+                        <button type="button" class="btn btn-success btn-sm mt-2 mb-4" id="add-produk-item">
                             <i class="bi bi-plus-lg"></i> Tambah Baris Produk
                         </button>
 
@@ -145,10 +145,9 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        let produkItemIndex = 1; 
+        let produkItemIndex = 1;
         const container = document.getElementById('produk-items-container');
 
-        // Fungsi untuk format angka ke Rupiah
         function formatRupiah(angka) {
             if (isNaN(angka)) return 'Rp 0';
             return new Intl.NumberFormat('id-ID', {
@@ -158,7 +157,11 @@
             }).format(angka);
         }
 
-        // Fungsi utama untuk menghitung semua total
+        function parseRupiah(rupiahString) {
+            if (!rupiahString) return 0;
+            return parseInt(String(rupiahString).replace(/[^0-9]/g, ''), 10) || 0;
+        }
+
         function calculateAllTotals() {
             let grandTotal = 0;
             document.querySelectorAll('.produk-item').forEach(row => {
@@ -168,7 +171,7 @@
 
             document.getElementById('total_keseluruhan').value = grandTotal;
             document.getElementById('total_keseluruhan_display').value = formatRupiah(grandTotal);
-            
+
             const uangMuka = parseFloat(document.getElementById('uang_muka').value) || 0;
             const diskon = parseFloat(document.getElementById('diskon').value) || 0;
             let sisa = grandTotal - uangMuka - diskon;
@@ -181,12 +184,13 @@
         function initializeProdukRow(rowElement) {
             const produkSelect = rowElement.querySelector('.produk-name');
             const itemQtyInput = rowElement.querySelector('.item-qty');
-            
+            const itemPriceDisplay = rowElement.querySelector('.item-price-display');
+
             const calculateItemTotal = () => {
                 const qty = parseFloat(itemQtyInput.value) || 0;
                 const price = parseFloat(rowElement.querySelector('.item-price').value) || 0;
                 const total = qty * price;
-                
+
                 rowElement.querySelector('.item-total').value = total.toFixed(0);
                 rowElement.querySelector('.item-total-display').value = formatRupiah(total);
                 calculateAllTotals();
@@ -212,11 +216,23 @@
             });
 
             itemQtyInput.addEventListener('input', calculateItemTotal);
-            calculateItemTotal();
+
+            itemPriceDisplay.addEventListener('input', function() {
+                const rawValue = parseRupiah(this.value);
+                rowElement.querySelector('.item-price').value = rawValue;
+                calculateItemTotal();
+            });
+
+            itemPriceDisplay.addEventListener('blur', function() {
+                const rawValue = parseRupiah(this.value);
+                this.value = formatRupiah(rawValue);
+            });
+
+            if(rowElement.dataset.index == 0) calculateItemTotal();
         }
 
         container.addEventListener('click', function(e) {
-            if (e.target.classList.contains('remove-produk-item')) {
+            if (e.target.closest('.remove-produk-item')) {
                 e.target.closest('.produk-item').remove();
                 calculateAllTotals();
             }
@@ -231,7 +247,7 @@
                 .then(html => {
                     container.insertAdjacentHTML('beforeend', html);
                     const newRow = container.querySelector(`.produk-item[data-index="${produkItemIndex}"]`);
-                    if(newRow) initializeProdukRow(newRow);
+                    if (newRow) initializeProdukRow(newRow);
                     produkItemIndex++;
                 })
                 .catch(error => console.error('Error adding product row:', error));
@@ -242,6 +258,7 @@
 
         const pelangganSelect = document.getElementById('pelanggan_id');
         function updatePelangganInfo() {
+            if (pelangganSelect.selectedIndex < 0) return;
             const selectedOption = pelangganSelect.options[pelangganSelect.selectedIndex];
             document.getElementById('alamat_pelanggan').value = selectedOption.dataset.alamat || '';
             document.getElementById('telp_pelanggan').value = selectedOption.dataset.telp || '';
