@@ -6,7 +6,7 @@
     <div class="row g-2 align-items-end">
         <div class="col-lg-5">
             @if($index == 0) <label class="form-label">Produk</label> @endif
-            <select name="nama_produk[]" class="form-select produk-name">
+            <select name="nama_produk[]" class="form-select form-control produk-name">
                 <option value="">Pilih Produk</option>
                 @foreach ($produks as $produk)
                     <option value="{{ $produk->nama }}"
