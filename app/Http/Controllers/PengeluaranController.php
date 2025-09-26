@@ -26,8 +26,8 @@ class PengeluaranController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
-        // Membangun query dengan filter
-        $query = Pengeluaran::with('karyawan')->latest();
+        // PERUBAHAN UTAMA: Mengganti latest() dengan orderBy('id', 'asc') untuk menampilkan data terlama di atas.
+        $query = Pengeluaran::with('karyawan')->orderBy('id', 'asc');
 
         if ($searchQuery) {
             $query->where('keterangan', 'like', '%' . $searchQuery . '%');
@@ -46,10 +46,11 @@ class PengeluaranController extends Controller
         }
 
         // Menggunakan pagination
-        $pengeluaran = $query->paginate(10); 
+        $pengeluaran = $query->paginate(10)->withQueryString();
 
-        // Menghitung total pengeluaran untuk data yang ditampilkan di halaman saat ini
-        $totalPengeluaran = $pengeluaran->sum('total');
+        // Menghitung total pengeluaran dari data yang sudah difilter sebelum paginasi
+        // Untuk ini kita perlu clone query sebelum paginasi
+        $totalPengeluaran = $query->clone()->sum('total');
 
         return view('pages.pengeluaran.index', compact('pengeluaran', 'totalPengeluaran'));
     }
@@ -160,7 +161,8 @@ class PengeluaranController extends Controller
 
         $pengeluaran->update([
             'jenis_pengeluaran' => $validatedData['jenis_pengeluaran'],
-            'karyawan_id' => $validatedData['karyawan_id'],
+            // Jika jenis bukan 'Kasbon Karyawan', pastikan karyawan_id disetel null
+            'karyawan_id' => $validatedData['jenis_pengeluaran'] === 'Kasbon Karyawan' ? $validatedData['karyawan_id'] : null,
             'keterangan' => $validatedData['keterangan'],
             'jumlah' => $validatedData['jumlah'],
             'harga' => $validatedData['harga'],
