@@ -1,4 +1,6 @@
-{{-- File: resources/views/pages/transaksi/produk_item_row.blade.php (SUDAH DIPERBAIKI) --}}
+{{-- ================================================================= --}}
+{{-- PASTE SELURUH KODE INI KE PRODUK_ITEM_ROW.BLADE.PHP --}}
+{{-- ================================================================= --}}
 <div class="row produk-item mb-2 align-items-center" data-index="{{ $index }}">
     <input type="hidden" name="produk_id[]" class="produk-id" value="{{ old('produk_id.'.$index, $detail->produk_id ?? '') }}">
     
@@ -41,14 +43,14 @@
 
     <div class="col-md-2"><div class="form-group mb-0">
         @if($index == 0) <label>Harga</label> @endif
-        {{-- PERBAIKAN: type diubah ke "text" dan value diberi (int) --}}
+        {{-- PERBAIKAN: Menggunakan (int) untuk membersihkan angka dari desimal .00 --}}
         <input type="text" name="harga[]" class="form-control item-price" value="{{ old('harga.'.$index, isset($detail) ? (int)$detail->harga : 0) }}">
     </div></div>
 
     <div class="col-md-2"><div class="d-flex align-items-center">
         <div class="form-group mb-0 flex-grow-1">
             @if($index == 0) <label>Total</label> @endif
-            {{-- PERBAIKAN: Dipecah menjadi 2 input, hidden untuk nilai, dan display untuk tampilan --}}
+            {{-- PERBAIKAN: Input total diubah menjadi display text, nilainya dikontrol oleh JS --}}
             <input type="hidden" name="total_item[]" class="item-total-hidden" value="{{ old('total_item.'.$index, isset($detail) ? (int)$detail->total : 0) }}">
             <input type="text" class="form-control item-total-display" readonly>
         </div>
