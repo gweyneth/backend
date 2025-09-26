@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Produk;
-use App\Models\Transaksi;
 use App\Models\TransaksiDetail;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\OmsetPenjualanExport;
@@ -14,17 +13,23 @@ class OmsetPenjualanController extends Controller
 {
     public function index(Request $request)
     {
-        $produks = Produk::all();
+        $produks = Produk::orderBy('nama', 'asc')->get();
         $selectedProdukId = $request->input('produk_id');
-        $selectedMonth = $request->input('bulan', Carbon::now()->format('Y-m'));
-        $carbonMonth = Carbon::parse($selectedMonth);
-        $startOfMonth = $carbonMonth->startOfMonth()->toDateString();
-        $endOfMonth = $carbonMonth->endOfMonth()->toDateString();
+        // PERBAIKAN: Hapus nilai default, agar bisa kosong (untuk menampilkan semua)
+        $selectedMonth = $request->input('bulan');
 
-        $query = TransaksiDetail::with(['transaksi', 'produk'])
-            ->whereHas('transaksi', function ($q) use ($startOfMonth, $endOfMonth) {
+        $query = TransaksiDetail::with(['transaksi', 'produk']);
+
+        // PERBAIKAN: Filter bulan hanya dijalankan jika $selectedMonth memiliki nilai
+        if ($selectedMonth) {
+            $carbonMonth = Carbon::parse($selectedMonth);
+            $startOfMonth = $carbonMonth->startOfMonth()->toDateString();
+            $endOfMonth = $carbonMonth->endOfMonth()->toDateString();
+
+            $query->whereHas('transaksi', function ($q) use ($startOfMonth, $endOfMonth) {
                 $q->whereBetween('tanggal_order', [$startOfMonth, $endOfMonth]);
             });
+        }
 
         if ($selectedProdukId && $selectedProdukId !== 'all') {
             $query->where('produk_id', $selectedProdukId);
@@ -32,9 +37,8 @@ class OmsetPenjualanController extends Controller
 
         $filteredTransaksiDetails = $query->get();
 
-        // PERBAIKAN: Mengurutkan berdasarkan ID produk (key) secara ascending
         $omsetProduk = $filteredTransaksiDetails->groupBy('produk_id')->map(function ($details) {
-            $productName = $details->first()->nama_produk;
+            $productName = optional($details->first()->produk)->nama ?? $details->first()->nama_produk;
             $totalQty = $details->sum('qty');
             $totalOmset = $details->sum('total');
 
@@ -59,16 +63,20 @@ class OmsetPenjualanController extends Controller
     public function exportExcel(Request $request)
     {
         $selectedProdukId = $request->input('produk_id');
-        $selectedMonth = $request->input('bulan', Carbon::now()->format('Y-m'));
+        $selectedMonth = $request->input('bulan'); // Hapus default
 
-        $carbonMonth = Carbon::parse($selectedMonth);
-        $startOfMonth = $carbonMonth->startOfMonth()->toDateString();
-        $endOfMonth = $carbonMonth->endOfMonth()->toDateString();
+        $query = TransaksiDetail::with(['transaksi', 'produk']);
 
-        $query = TransaksiDetail::with(['transaksi', 'produk'])
-            ->whereHas('transaksi', function ($q) use ($startOfMonth, $endOfMonth) {
+        // Logika yang sama seperti di method index
+        if ($selectedMonth) {
+            $carbonMonth = Carbon::parse($selectedMonth);
+            $startOfMonth = $carbonMonth->startOfMonth()->toDateString();
+            $endOfMonth = $carbonMonth->endOfMonth()->toDateString();
+
+            $query->whereHas('transaksi', function ($q) use ($startOfMonth, $endOfMonth) {
                 $q->whereBetween('tanggal_order', [$startOfMonth, $endOfMonth]);
             });
+        }
 
         if ($selectedProdukId && $selectedProdukId !== 'all') {
             $query->where('produk_id', $selectedProdukId);
@@ -76,9 +84,8 @@ class OmsetPenjualanController extends Controller
 
         $filteredTransaksiDetails = $query->get();
 
-        // PERBAIKAN: Mengurutkan berdasarkan ID produk (key) agar konsisten dengan tampilan web
         $omsetProduk = $filteredTransaksiDetails->groupBy('produk_id')->map(function ($details) {
-            $productName = $details->first()->nama_produk;
+            $productName = optional($details->first()->produk)->nama ?? $details->first()->nama_produk;
             $totalQty = $details->sum('qty');
             $totalOmset = $details->sum('total');
 
@@ -90,7 +97,8 @@ class OmsetPenjualanController extends Controller
         })->sortKeys();
 
         $subtotalOmset = $omsetProduk->sum('total');
-        $fileName = 'omset_penjualan_' . date('Ym', strtotime($selectedMonth)) . '.xlsx';
+
+        $fileName = 'omset_penjualan_' . ($selectedMonth ? date('Ym', strtotime($selectedMonth)) : 'semua_waktu') . '.xlsx';
 
         return Excel::download(new OmsetPenjualanExport($omsetProduk, $subtotalOmset, $selectedMonth), $fileName);
     }

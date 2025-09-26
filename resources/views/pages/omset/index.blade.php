@@ -17,11 +17,17 @@
 @section('content')
 <div class="row">
     <div class="col-12">
-        <div class="card">
+        <div class="card card-primary card-outline">
             <div class="card-header">
                 <h3 class="card-title">
                     <i class="fas fa-chart-line mr-1"></i>
-                    Laporan Omset Penjualan
+                    {{-- PERBAIKAN: Judul dinamis berdasarkan filter --}}
+                    Laporan Omset Penjualan 
+                    @if($selectedMonth)
+                        <span class="text-bold"> - {{ \Carbon\Carbon::parse($selectedMonth)->isoFormat('MMMM YYYY') }}</span>
+                    @else
+                        <span class="text-bold"> - Semua Waktu</span>
+                    @endif
                 </h3>
             </div>
             <div class="card-body">
@@ -29,7 +35,7 @@
                 <div class="mb-4">
                     <form action="{{ route('omset.index') }}" method="GET" id="omsetFilterForm">
                         <div class="row align-items-end">
-                            <div class="col-md-4 form-group">
+                            <div class="col-md-3 form-group">
                                 <label for="produk_id">Filter Produk</label>
                                 <select name="produk_id" id="produk_id" class="form-control">
                                     <option value="all">Semua Produk</option>
@@ -44,10 +50,12 @@
                                 <label for="bulan">Filter Bulan</label>
                                 <input type="month" name="bulan" id="bulan" class="form-control" value="{{ $selectedMonth }}">
                             </div>
-                            <div class="col-md-5 form-group">
+                            <div class="col-md-6 form-group">
                                 <button type="submit" class="btn btn-primary"><i class="fas fa-filter mr-1"></i> Filter</button>
-                                <a href="{{ route('omset.index') }}" class="btn btn-secondary"><i class="fas fa-sync-alt mr-1"></i> Reset</a>
-                                <button type="button" class="btn btn-success" onclick="exportOmsetExcel()"><i class="fas fa-file-excel"></i> Cetak Omset</button
+                                {{-- PERBAIKAN: Tombol baru untuk menampilkan semua omset --}}
+                                <button type="button" class="btn btn-info" onclick="showAllOmset()"><i class="fas fa-globe mr-1"></i> Tampilkan Semua</button>
+                                <a href="{{ route('omset.index') }}" class="btn btn-secondary"><i class="fas fa-sync-alt"></i></a>
+                                <button type="button" class="btn btn-success" onclick="exportOmsetExcel()"><i class="fas fa-file-excel mr-1"></i> Cetak Omset</button>
                             </div>
                         </div>
                     </form>
@@ -82,7 +90,7 @@
                         <tfoot>
                             <tr>
                                 <th colspan="3" class="text-right">Subtotal Omset Keseluruhan:</th>
-                                <th>Rp{{ number_format($subtotalOmset, 0, ',', '.') }}</th>
+                                <th class="text-bold">Rp{{ number_format($subtotalOmset, 0, ',', '.') }}</th>
                             </tr>
                         </tfoot>
                         @endif
@@ -97,12 +105,17 @@
 @push('scripts')
 <script>
     function exportOmsetExcel() {
-        // Mengambil nilai filter dari form
         const form = document.getElementById('omsetFilterForm');
         const queryString = new URLSearchParams(new FormData(form)).toString();
-        
-        // Mengarahkan ke route export dengan parameter filter
         window.location.href = `{{ route('omset.export-excel') }}?${queryString}`;
+    }
+
+    // FUNGSI BARU: Untuk menghapus filter bulan dan submit form
+    function showAllOmset() {
+        // Mengosongkan nilai input bulan
+        document.getElementById('bulan').value = '';
+        // Submit form untuk memuat ulang data tanpa filter bulan
+        document.getElementById('omsetFilterForm').submit();
     }
 </script>
 @endpush
