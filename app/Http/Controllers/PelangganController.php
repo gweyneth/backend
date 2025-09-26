@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Pelanggan;
 use Illuminate\Http\Request;
-use App\Exports\PelangganExport; 
+use App\Exports\PelangganExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class PelangganController extends Controller
@@ -39,10 +39,12 @@ class PelangganController extends Controller
             });
         }
 
-        // Mengambil data dengan urutan terbaru dan paginasi
-        $data = $query->latest()->paginate($limit);
+        // =================================================================
+        // PERBAIKAN: Mengubah urutan dari terbaru (latest) menjadi terlama (ascending by id).
+        // =================================================================
+        $data = $query->orderBy('id', 'asc')->paginate($limit);
 
-        // PERUBAHAN: Menghitung total seluruh pelanggan dan mengirimkannya ke view
+        // Menghitung total seluruh pelanggan dan mengirimkannya ke view
         $totalPelanggan = Pelanggan::count();
 
         return view('pages.pelanggan.index', compact('data', 'limit', 'startDate', 'endDate', 'searchQuery', 'totalPelanggan'));
@@ -131,13 +133,18 @@ class PelangganController extends Controller
             return response()->json(['success' => 'Data pelanggan berhasil dihapus!']);
 
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Gagal menghapus data. Mungkin data ini terkait dengan data lain.'], 500);
+            // Cek jika error disebabkan oleh foreign key constraint
+            if ($e instanceof \Illuminate\Database\QueryException && str_contains($e->getMessage(), 'foreign key constraint fails')) {
+                 return response()->json(['error' => 'Gagal menghapus: Pelanggan ini memiliki transaksi terkait.'], 422);
+            }
+            return response()->json(['error' => 'Gagal menghapus data. Terjadi kesalahan server.'], 500);
         }
     }
 
     private function generateNextKodePelanggan()
     {
-        $latestPelanggan = Pelanggan::latest('id')->first();
+        // Menggunakan order by ID desc untuk mendapatkan ID terakhir
+        $latestPelanggan = Pelanggan::orderBy('id', 'desc')->first();
         $nextId = ($latestPelanggan) ? $latestPelanggan->id + 1 : 1;
         return 'PLG-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
     }
@@ -146,5 +153,4 @@ class PelangganController extends Controller
     {
         return Excel::download(new PelangganExport, 'data-pelanggan-' . now()->format('Y-m-d') . '.xlsx');
     }
-
 }

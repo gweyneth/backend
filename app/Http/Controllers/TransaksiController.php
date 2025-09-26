@@ -18,12 +18,17 @@ use App\Exports\PendapatanExport;
 
 class TransaksiController extends Controller
 {
+    /**
+     * Menampilkan halaman log transaksi.
+     */
     public function index(Request $request)
     {
         $limit = $request->input('limit', 10);
         $searchQuery = $request->input('search_query');
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
+        
+        // Mengurutkan dari data terlama (ascending)
         $query = Transaksi::with(['pelanggan'])->orderBy('id', 'asc');
 
         if ($searchQuery) {
@@ -53,15 +58,21 @@ class TransaksiController extends Controller
         ));
     }
 
+    /**
+     * Menampilkan form untuk membuat transaksi baru.
+     */
     public function create()
     {
-        $latestTransaksi = Transaksi::latest()->first();
+        $latestTransaksi = Transaksi::latest('id')->first();
         $nextNoTransaksi = $this->generateNoTransaksi($latestTransaksi ? $latestTransaksi->no_transaksi : null);
-        $pelanggan = Pelanggan::all();
-        $produks = Produk::all();
+        $pelanggan = Pelanggan::orderBy('nama', 'asc')->get();
+        $produks = Produk::orderBy('nama', 'asc')->get();
         return view('pages.transaksi.create', compact('nextNoTransaksi', 'pelanggan', 'produks'));
     }
 
+    /**
+     * Menyimpan transaksi baru ke database.
+     */
     public function store(Request $request)
     {
         try {
@@ -122,21 +133,30 @@ class TransaksiController extends Controller
             return redirect()->back()->with('error', 'Terjadi kesalahan server: ' . $e->getMessage())->withInput();
         }
     }
-
+    
+    /**
+     * Menampilkan detail satu transaksi.
+     */
     public function show(int $id)
     {
         $transaksi = Transaksi::with(['pelanggan', 'transaksiDetails.produk'])->findOrFail($id);
         return view('pages.transaksi.show', compact('transaksi'));
     }
 
+    /**
+     * Menampilkan form untuk mengedit transaksi.
+     */
     public function edit(int $id)
     {
         $transaksi = Transaksi::with('transaksiDetails')->findOrFail($id);
-        $pelanggan = Pelanggan::all();
-        $produks = Produk::all();
+        $pelanggan = Pelanggan::orderBy('nama', 'asc')->get();
+        $produks = Produk::orderBy('nama', 'asc')->get();
         return view('pages.transaksi.edit', compact('transaksi', 'pelanggan', 'produks'));
     }
 
+    /**
+     * Memperbarui data transaksi di database.
+     */
     public function update(Request $request, int $id)
     {
         $transaksi = Transaksi::findOrFail($id);
@@ -175,7 +195,7 @@ class TransaksiController extends Controller
                 ]);
 
                 $transaksi->transaksiDetails()->delete();
-
+                
                 if (isset($validatedData['nama_produk'])) {
                     foreach ($validatedData['nama_produk'] as $key => $nama_produk) {
                         TransaksiDetail::create([
@@ -201,91 +221,40 @@ class TransaksiController extends Controller
         }
     }
 
-    public function pelunasan(Request $request, int $id)
+    /**
+     * Menghapus data transaksi.
+     */
+    public function destroy(int $id)
     {
-        $transaksi = Transaksi::findOrFail($id);
-        $validatedData = $request->validate([
-            'jumlah_bayar' => 'required|numeric|min:0',
-            'metode_pembayaran' => 'required|in:tunai,transfer_bank,qris',
-            'rekening_id' => 'nullable|exists:rekening,id',
-            'bukti_pembayaran' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'keterangan_pembayaran' => 'nullable|string|max:500',
-            'id_pelunasan' => 'nullable|string|max:255',
-        ]);
-
-        if ($validatedData['metode_pembayaran'] === 'transfer_bank') {
-            $request->validate(['rekening_id' => 'required|exists:rekening,id', 'bukti_pembayaran' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',], ['rekening_id.required' => 'Pilih rekening bank jika metode pembayaran adalah transfer.', 'bukti_pembayaran.required' => 'Bukti pembayaran wajib diunggah jika metode pembayaran adalah transfer.', 'bukti_pembayaran.image' => 'File bukti pembayaran harus berupa gambar.', 'bukti_pembayaran.mimes' => 'Format gambar yang diizinkan untuk bukti pembayaran: jpeg, png, jpg, gif.', 'bukti_pembayaran.max' => 'Ukuran gambar bukti pembayaran maksimal 2MB.',]);
-        }
-        $jumlahBayar = $validatedData['jumlah_bayar'];
-        if ($jumlahBayar > $transaksi->sisa) {
-            return redirect()->back()->with('error', 'Jumlah pembayaran melebihi sisa tagihan.');
-        }
-
-        DB::beginTransaction();
+        // PERBAIKAN: Menggunakan DB::transaction closure agar lebih aman
         try {
-            $newUangMuka = $transaksi->uang_muka + $jumlahBayar;
-            $newSisa = $transaksi->total - $newUangMuka - $transaksi->diskon;
-            if ($newSisa < 0) $newSisa = 0;
-            $pathBuktiPembayaran = $transaksi->bukti_pembayaran;
-            if ($request->hasFile('bukti_pembayaran')) {
+            DB::transaction(function() use ($id) {
+                $transaksi = Transaksi::findOrFail($id);
                 if ($transaksi->bukti_pembayaran && Storage::disk('public')->exists($transaksi->bukti_pembayaran)) {
                     Storage::disk('public')->delete($transaksi->bukti_pembayaran);
                 }
-                $pathBuktiPembayaran = $request->file('bukti_pembayaran')->store('bukti_pembayaran', 'public');
-            }
-            $transaksi->update(['uang_muka' => $newUangMuka, 'sisa' => $newSisa, 'id_pelunasan' => $validatedData['id_pelunasan'] ?? $transaksi->id_pelunasan, 'metode_pembayaran' => $validatedData['metode_pembayaran'], 'bukti_pembayaran' => $pathBuktiPembayaran, 'rekening_id' => $validatedData['rekening_id'] ?? null, 'keterangan_pembayaran' => $validatedData['keterangan_pembayaran'] ?? null,]);
-            DB::commit();
-            return redirect()->route('transaksi.index')->with('success', 'Pembayaran pelunasan berhasil diproses!');
-        } catch (ValidationException $e) {
-            DB::rollBack();
-            return redirect()->back()->withErrors($e->errors())->withInput();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()->with('error', 'Terjadi kesalahan server: ' . $e->getMessage())->withInput();
-        }
-    }
-
-    public function destroy(int $id)
-    {
-        try {
-            DB::beginTransaction();
-            $transaksi = Transaksi::findOrFail($id);
-            if ($transaksi->bukti_pembayaran && Storage::disk('public')->exists($transaksi->bukti_pembayaran)) {
-                Storage::disk('public')->delete($transaksi->bukti_pembayaran);
-            }
-            $transaksi->transaksiDetails()->delete();
-            $transaksi->delete();
-            DB::commit();
+                $transaksi->transaksiDetails()->delete();
+                $transaksi->delete();
+            });
             return response()->json(['success' => 'Transaksi berhasil dihapus!']);
         } catch (\Exception $e) {
-            DB::rollBack();
             return response()->json(['error' => 'Gagal menghapus. Transaksi ini mungkin terkait dengan data lain.'], 500);
         }
     }
 
-    public function getProductDetails(Request $request)
-    {
-        $produkId = $request->input('produk_id');
-        $produkName = $request->input('nama_produk');
-        $produk = null;
-        if ($produkId) {
-            $produk = Produk::find($produkId);
-        } elseif ($produkName) {
-            $produk = Produk::where('nama', $produkName)->first();
-        }
-        if ($produk) {
-            return response()->json(['nama_produk' => $produk->nama, 'ukuran' => $produk->ukuran, 'satuan' => $produk->satuan ?? '', 'harga' => $produk->harga_jual,]);
-        }
-        return response()->json(null, 404);
-    }
-
+    /**
+     * Mengambil baris HTML baru untuk item produk.
+     */
     public function getProdukItemRow(Request $request)
     {
         $index = $request->input('index');
-        $produks = Produk::all();
+        $produks = Produk::orderBy('nama', 'asc')->get();
         return view('pages.transaksi.produk_item_row', compact('index', 'produks'));
     }
 
+    /**
+     * Membuat nomor transaksi baru secara otomatis.
+     */
     private function generateNoTransaksi(?string $lastNoTransaksi): string
     {
         $prefix = 'KRP';
@@ -301,19 +270,33 @@ class TransaksiController extends Controller
         }
         return $prefix . $datePart . '-' . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
     }
-
+    
+    /**
+     * Menampilkan halaman piutang.
+     */
     public function piutangIndex()
     {
-        $piutangTransaksi = Transaksi::with('pelanggan')->where('sisa', '>', 0)->latest()->get();
+        // PERBAIKAN: Mengurutkan dari data terlama (ascending)
+        $piutangTransaksi = Transaksi::with('pelanggan')
+            ->where('sisa', '>', 0)
+            ->orderBy('id', 'asc')
+            ->get();
+
         $totalPiutang = $piutangTransaksi->sum('sisa');
         return view('pages.piutang.index', compact('piutangTransaksi', 'totalPiutang'));
     }
 
+    /**
+     * Menampilkan halaman rincian pendapatan.
+     */
     public function pendapatanIndex(Request $request)
     {
-        $query = Transaksi::with(['pelanggan', 'rekening'])->where(function ($q) {
-            $q->where('sisa', '=', 0)->orWhere('uang_muka', '>', 0);
-        })->latest('updated_at');
+        // Mengubah urutan dari terbaru (latest) menjadi terlama (ascending)
+        $query = Transaksi::with(['pelanggan', 'rekening'])
+            ->where(function ($q) {
+                $q->where('sisa', '=', 0)->orWhere('uang_muka', '>', 0);
+            })
+            ->orderBy('id', 'asc');
 
         $query->when($request->filled('search_query'), function ($q) use ($request) {
             $search = $request->input('search_query');
@@ -333,29 +316,24 @@ class TransaksiController extends Controller
         return view('pages.pendapatan.index', compact('pendapatanTransaksi', 'totalPendapatan', 'rekening'));
     }
 
+    /**
+     * Mengekspor data pendapatan ke Excel.
+     */
     public function exportExcelPendapatan(Request $request)
     {
         $filters = $request->all();
+        // Pastikan class PendapatanExport sudah dibuat dan sesuai
         return Excel::download(new PendapatanExport($filters), 'laporan-pendapatan-' . date('d-m-Y') . '.xlsx');
     }
 
-    public function printReceipt(int $id)
-    {
-        $transaksi = Transaksi::with(['pelanggan', 'transaksiDetails.produk'])->findOrFail($id);
-        $perusahaan = Perusahaan::first();
-        return view('pages.transaksi.receipt', compact('transaksi', 'perusahaan'));
-    }
-
-    public function printInvoice(int $id)
-    {
-        $transaksi = Transaksi::with(['pelanggan', 'transaksiDetails.produk'])->findOrFail($id);
-        $perusahaan = Perusahaan::first();
-        return view('pages.transaksi.invoice', compact('transaksi', 'perusahaan'));
-    }
-
+    /**
+     * Mengekspor data log transaksi ke Excel.
+     */
     public function exportExcel(Request $request)
     {
         $fileName = 'transaksi_' . date('Ymd_His') . '.xlsx';
+        // Pastikan class TransaksiExport sudah dibuat dan sesuai
         return Excel::download(new TransaksiExport($request->query()), $fileName);
     }
 }
+

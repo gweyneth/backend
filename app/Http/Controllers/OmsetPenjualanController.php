@@ -20,16 +20,19 @@ class OmsetPenjualanController extends Controller
         $carbonMonth = Carbon::parse($selectedMonth);
         $startOfMonth = $carbonMonth->startOfMonth()->toDateString();
         $endOfMonth = $carbonMonth->endOfMonth()->toDateString();
+
         $query = TransaksiDetail::with(['transaksi', 'produk'])
             ->whereHas('transaksi', function ($q) use ($startOfMonth, $endOfMonth) {
                 $q->whereBetween('tanggal_order', [$startOfMonth, $endOfMonth]);
             });
+
         if ($selectedProdukId && $selectedProdukId !== 'all') {
             $query->where('produk_id', $selectedProdukId);
         }
 
         $filteredTransaksiDetails = $query->get();
 
+        // PERBAIKAN: Mengurutkan berdasarkan ID produk (key) secara ascending
         $omsetProduk = $filteredTransaksiDetails->groupBy('produk_id')->map(function ($details) {
             $productName = $details->first()->nama_produk;
             $totalQty = $details->sum('qty');
@@ -40,7 +43,8 @@ class OmsetPenjualanController extends Controller
                 'jumlah' => $totalQty,
                 'total' => $totalOmset,
             ];
-        })->sortByDesc('total');
+        })->sortKeys();
+
         $subtotalOmset = $omsetProduk->sum('total');
 
         return view('pages.omset.index', compact(
@@ -72,6 +76,7 @@ class OmsetPenjualanController extends Controller
 
         $filteredTransaksiDetails = $query->get();
 
+        // PERBAIKAN: Mengurutkan berdasarkan ID produk (key) agar konsisten dengan tampilan web
         $omsetProduk = $filteredTransaksiDetails->groupBy('produk_id')->map(function ($details) {
             $productName = $details->first()->nama_produk;
             $totalQty = $details->sum('qty');
@@ -82,12 +87,10 @@ class OmsetPenjualanController extends Controller
                 'jumlah' => $totalQty,
                 'total' => $totalOmset,
             ];
-        });
+        })->sortKeys();
 
         $subtotalOmset = $omsetProduk->sum('total');
-
         $fileName = 'omset_penjualan_' . date('Ym', strtotime($selectedMonth)) . '.xlsx';
-
 
         return Excel::download(new OmsetPenjualanExport($omsetProduk, $subtotalOmset, $selectedMonth), $fileName);
     }

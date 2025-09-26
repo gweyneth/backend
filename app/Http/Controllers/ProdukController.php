@@ -17,7 +17,8 @@ class ProdukController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Produk::with(['kategori'])->latest();
+        // PERBAIKAN: Mengubah urutan default menjadi ascending (data terlama dulu)
+        $query = Produk::with(['kategori'])->orderBy('id', 'asc');
 
         if ($request->has('search_query') && $request->search_query) {
             $query->where(function ($q) use ($request) {
@@ -30,7 +31,7 @@ class ProdukController extends Controller
             $query->where('kategori_id', $request->kategori_id);
         }
 
-        $produks = $query->paginate(10);
+        $produks = $query->paginate(10)->withQueryString(); // Tambah withQueryString agar filter tetap saat paginasi
         $kategoriBarangs = KategoriBarang::all();
 
         return view('pages.produk.index', compact('produks', 'kategoriBarangs'));
@@ -54,19 +55,19 @@ class ProdukController extends Controller
      */
     public function store(Request $request)
     {
-        // PERBAIKAN: Menyesuaikan nama tabel di aturan validasi
+        // PERBAIKAN: Menyesuaikan nama tabel (plural) di aturan validasi sesuai konvensi Laravel
         $validatedData = $request->validate([
             'nama' => 'required|string|max:255',
-            'kode' => 'required|string|unique:produk,kode',
+            'kode' => 'required|string|unique:produks,kode',
             'deskripsi' => 'nullable|string',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'bahan_id' => 'required|exists:bahan,id',
+            'bahan_id' => 'required|exists:bahans,id',
             'ukuran' => 'nullable|string|max:100',
             'jumlah' => 'required|integer|min:0',
             'harga_beli' => 'required|numeric|min:0',
             'harga_jual' => 'required|numeric|min:0|gte:harga_beli',
-            'kategori_id' => 'required|exists:kategori,id',
-            'satuan_id' => 'required|exists:satuan,id',
+            'kategori_id' => 'required|exists:kategori_barangs,id',
+            'satuan_id' => 'required|exists:satuans,id',
         ], [
             'harga_jual.gte' => 'Harga jual tidak boleh lebih rendah dari harga beli.',
         ]);
@@ -75,7 +76,6 @@ class ProdukController extends Controller
             $validatedData['foto'] = $request->file('foto')->store('produk_foto', 'public');
         }
 
-        // PERBAIKAN: Menggunakan $validatedData untuk membuat produk
         Produk::create($validatedData);
         return redirect()->route('produk.index')->with('success', 'Data produk berhasil ditambahkan.');
     }
@@ -109,18 +109,18 @@ class ProdukController extends Controller
     {
         $produk = Produk::findOrFail($id);
 
-        // PERBAIKAN: Menyesuaikan nama tabel di aturan validasi
+        // PERBAIKAN: Menyesuaikan nama tabel (plural) di aturan validasi
         $validatedData = $request->validate([
             'nama' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'bahan_id' => 'required|exists:bahan,id',
+            'bahan_id' => 'required|exists:bahans,id',
             'ukuran' => 'nullable|string|max:100',
             'jumlah' => 'required|integer|min:0',
             'harga_beli' => 'required|numeric|min:0',
             'harga_jual' => 'required|numeric|min:0|gte:harga_beli',
-            'kategori_id' => 'required|exists:kategori,id',
-            'satuan_id' => 'required|exists:satuan,id',
+            'kategori_id' => 'required|exists:kategori_barangs,id',
+            'satuan_id' => 'required|exists:satuans,id',
         ]);
 
         if ($request->hasFile('foto')) {
@@ -130,7 +130,6 @@ class ProdukController extends Controller
             $validatedData['foto'] = $request->file('foto')->store('produk_foto', 'public');
         }
 
-        // PERBAIKAN: Menggunakan $validatedData untuk update
         $produk->update($validatedData);
         return redirect()->route('produk.index')->with('success', 'Data produk berhasil diperbarui.');
     }
@@ -148,13 +147,17 @@ class ProdukController extends Controller
             $produk->delete();
             return response()->json(['success' => 'Data produk berhasil dihapus.']);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Gagal menghapus. Produk ini mungkin terkait dengan data lain.'], 500);
+            // PERBAIKAN: Menambahkan penanganan error foreign key
+            if ($e instanceof \Illuminate\Database\QueryException && str_contains($e->getMessage(), 'foreign key constraint fails')) {
+                return response()->json(['error' => 'Gagal menghapus: Produk ini terkait dengan data transaksi.'], 422);
+            }
+            return response()->json(['error' => 'Gagal menghapus data. Terjadi kesalahan server.'], 500);
         }
     }
 
     private function generateNextKodeProduk()
     {
-        $latestProduk = Produk::latest('id')->first();
+        $latestProduk = Produk::orderBy('id', 'desc')->first();
         $nextId = ($latestProduk) ? $latestProduk->id + 1 : 1;
         return 'PROD-' . str_pad($nextId, 5, '0', STR_PAD_LEFT);
     }
