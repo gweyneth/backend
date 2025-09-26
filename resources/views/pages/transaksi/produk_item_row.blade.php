@@ -1,59 +1,44 @@
-{{-- ================================================================= --}}
-{{-- PASTE SELURUH KODE INI KE PRODUK_ITEM_ROW.BLADE.PHP --}}
-{{-- ================================================================= --}}
-<div class="row produk-item mb-2 align-items-center" data-index="{{ $index }}">
-    <input type="hidden" name="produk_id[]" class="produk-id" value="{{ old('produk_id.'.$index, $detail->produk_id ?? '') }}">
+<div class="row g-2 mb-3 align-items-center produk-item border-bottom pb-3" data-index="{{ $index }}">
+    <input type="hidden" name="produk_id[]" class="produk-id" value="">
     
-    <div class="col-md-3"><div class="form-group mb-0">
-        @if($index == 0) <label>Produk</label> @endif
-        <select name="nama_produk[]" class="form-control produk-name">
+    <div class="col-md-3">
+        @if($index == 0) <label class="form-label">Produk</label> @endif
+        <select name="nama_produk[]" class="form-select produk-name">
             <option value="">Pilih Produk</option>
             @foreach ($produks as $produk)
-                <option value="{{ $produk->nama }}"
+                <option value="{{ $produk->nama }}" 
                         data-id="{{ $produk->id }}"
                         data-ukuran="{{ $produk->ukuran }}"
-                        data-satuan="{{ $produk->satuan->nama ?? '' }}"
-                        data-harga="{{ $produk->harga_jual }}"
-                        {{ old('nama_produk.'.$index, $detail->nama_produk ?? '') == $produk->nama ? 'selected' : '' }}>
+                        data-satuan="{{ $produk->satuan ?? '' }}"
+                        data-harga="{{ $produk->harga_jual }}">
                     {{ $produk->nama }}
                 </option>
             @endforeach
         </select>
-    </div></div>
-
-    <div class="col-md-2"><div class="form-group mb-0">
-        @if($index == 0) <label>Keterangan</label> @endif
-        <input type="text" name="keterangan[]" class="form-control" placeholder="Keterangan" value="{{ old('keterangan.'.$index, $detail->keterangan ?? '') }}">
-    </div></div>
-    
-    <div class="col-md-1"><div class="form-group mb-0">
-        @if($index == 0) <label>Qty</label> @endif
-        <input type="number" name="qty[]" class="form-control item-qty" value="{{ old('qty.'.$index, $detail->qty ?? 1) }}" min="1">
-    </div></div>
-
-    <div class="col-md-1"><div class="form-group mb-0">
-        @if($index == 0) <label>Ukuran</label> @endif
-        <input type="text" name="ukuran[]" class="form-control produk-ukuran" readonly value="{{ old('ukuran.'.$index, $detail->ukuran ?? '') }}">
-    </div></div>
-    
-    <div class="col-md-1"><div class="form-group mb-0">
-        @if($index == 0) <label>Satuan</label> @endif
-        <input type="text" name="satuan[]" class="form-control produk-satuan" readonly value="{{ old('satuan.'.$index, $detail->satuan ?? '') }}">
-    </div></div>
-
-    <div class="col-md-2"><div class="form-group mb-0">
-        @if($index == 0) <label>Harga</label> @endif
-        {{-- PERBAIKAN: Menggunakan (int) untuk membersihkan angka dari desimal .00 --}}
-        <input type="text" name="harga[]" class="form-control item-price" value="{{ old('harga.'.$index, isset($detail) ? (int)$detail->harga : 0) }}">
-    </div></div>
-
-    <div class="col-md-2"><div class="d-flex align-items-center">
-        <div class="form-group mb-0 flex-grow-1">
-            @if($index == 0) <label>Total</label> @endif
-            {{-- PERBAIKAN: Input total diubah menjadi display text, nilainya dikontrol oleh JS --}}
-            <input type="hidden" name="total_item[]" class="item-total-hidden" value="{{ old('total_item.'.$index, isset($detail) ? (int)$detail->total : 0) }}">
-            <input type="text" class="form-control item-total-display" readonly>
-        </div>
-        <button type="button" class="btn btn-danger btn-sm ml-2 remove-produk-item" style="margin-top: {{ $index == 0 ? '24px' : '0' }};">&times;</button>
-    </div></div>
+    </div>
+    <div class="col-md-3">
+        @if($index == 0) <label class="form-label">Keterangan</label> @endif
+        <input type="text" name="keterangan[]" class="form-control keterangan" placeholder="Keterangan">
+    </div>
+    <div class="col-auto">
+        @if($index == 0) <label class="form-label">Qty</label> @endif
+        <input type="number" name="qty[]" class="form-control item-qty" value="1" min="1" placeholder="Qty" style="width: 70px;">
+    </div>
+    <div class="col-auto">
+        @if($index == 0) <label class="form-label">Ukuran</label> @endif
+        <input type="text" name="ukuran[]" class="form-control produk-ukuran" readonly placeholder="Ukuran" style="width: 100px;">
+    </div>
+    <div class="col">
+        @if($index == 0) <label class="form-label">Harga</label> @endif
+        <input type="text" class="form-control item-price-display text-end" readonly placeholder="Harga Satuan">
+        <input type="hidden" name="harga[]" class="item-price">
+    </div>
+    <div class="col">
+        @if($index == 0) <label class="form-label">Total</label> @endif
+        <input type="text" class="form-control item-total-display text-end" readonly placeholder="Total">
+        <input type="hidden" name="total_item[]" class="item-total">
+    </div>
+    <div class="col-auto align-self-end">
+         <button type="button" class="btn btn-danger remove-produk-item">&times;</button>
+    </div>
 </div>

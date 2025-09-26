@@ -18,22 +18,6 @@ use App\Exports\PendapatanExport;
 
 class TransaksiController extends Controller
 {
-    /**
-     * PERBAIKAN: Fungsi baru untuk membersihkan format mata uang dengan aman.
-     */
-    private function cleanCurrencyValue($value)
-    {
-        if ($value === null) {
-            return null;
-        }
-        // 1. Hapus "Rp", spasi, dan titik (pemisah ribuan)
-        $cleaned = str_replace(['Rp', ' ', '.'], '', $value);
-        // 2. Ganti koma (pemisah desimal) dengan titik
-        $cleaned = str_replace(',', '.', $cleaned);
-        
-        return (float) $cleaned;
-    }
-
     public function index(Request $request)
     {
         $limit = $request->input('limit', 10);
@@ -81,30 +65,7 @@ class TransaksiController extends Controller
     public function store(Request $request)
     {
         try {
-            // PERBAIKAN: Menggunakan fungsi cleanCurrencyValue
-            $request->merge([
-                'total_keseluruhan' => $this->cleanCurrencyValue($request->input('total_keseluruhan')),
-                'uang_muka' => $this->cleanCurrencyValue($request->input('uang_muka')),
-                'diskon' => $this->cleanCurrencyValue($request->input('diskon')),
-                'sisa' => $this->cleanCurrencyValue($request->input('sisa')),
-            ]);
-
-            if ($request->has('harga') && is_array($request->input('harga'))) {
-                $cleanedHarga = [];
-                foreach ($request->input('harga') as $key => $value) {
-                    $cleanedHarga[$key] = $this->cleanCurrencyValue($value);
-                }
-                $request->merge(['harga' => $cleanedHarga]);
-            }
-            if ($request->has('total_item') && is_array($request->input('total_item'))) {
-                $cleanedTotalItem = [];
-                foreach ($request->input('total_item') as $key => $value) {
-                    $cleanedTotalItem[$key] = $this->cleanCurrencyValue($value);
-                }
-                $request->merge(['total_item' => $cleanedTotalItem]);
-            }
-
-            $validatedTransaksi = $request->validate([
+            $validatedData = $request->validate([
                 'no_transaksi' => 'required|string|unique:transaksi,no_transaksi|max:255',
                 'pelanggan_id' => 'nullable|exists:pelanggan,id',
                 'tanggal_order' => 'required|date',
@@ -112,9 +73,8 @@ class TransaksiController extends Controller
                 'total_keseluruhan' => 'required|numeric|min:0',
                 'uang_muka' => 'nullable|numeric|min:0',
                 'diskon' => 'nullable|numeric|min:0',
+                'sisa' => 'required|numeric|min:0',
                 'status_pengerjaan' => 'required|in:menunggu export,belum dikerjakan,proses desain,proses produksi,selesai',
-            ]);
-            $request->validate([
                 'produk_id.*' => 'nullable|exists:produk,id',
                 'nama_produk.*' => 'required|string|max:255',
                 'keterangan.*' => 'nullable|string',
@@ -125,45 +85,40 @@ class TransaksiController extends Controller
                 'total_item.*' => 'required|numeric|min:0',
             ]);
 
-            DB::beginTransaction();
-            $sisaPembayaran = ($validatedTransaksi['total_keseluruhan'] - ($validatedTransaksi['uang_muka'] ?? 0) - ($validatedTransaksi['diskon'] ?? 0));
-            if ($sisaPembayaran < 0) $sisaPembayaran = 0;
+            DB::transaction(function () use ($validatedData) {
+                $transaksi = Transaksi::create([
+                    'no_transaksi' => $validatedData['no_transaksi'],
+                    'pelanggan_id' => $validatedData['pelanggan_id'],
+                    'tanggal_order' => $validatedData['tanggal_order'],
+                    'tanggal_selesai' => $validatedData['tanggal_selesai'],
+                    'total' => $validatedData['total_keseluruhan'],
+                    'uang_muka' => $validatedData['uang_muka'] ?? 0,
+                    'diskon' => $validatedData['diskon'] ?? 0,
+                    'sisa' => $validatedData['sisa'],
+                    'status_pengerjaan' => $validatedData['status_pengerjaan'],
+                ]);
 
-            $transaksi = Transaksi::create([
-                'no_transaksi' => $validatedTransaksi['no_transaksi'],
-                'pelanggan_id' => $validatedTransaksi['pelanggan_id'],
-                'tanggal_order' => $validatedTransaksi['tanggal_order'],
-                'tanggal_selesai' => $validatedTransaksi['tanggal_selesai'],
-                'total' => $validatedTransaksi['total_keseluruhan'],
-                'uang_muka' => $validatedTransaksi['uang_muka'] ?? 0,
-                'diskon' => $validatedTransaksi['diskon'] ?? 0,
-                'sisa' => $sisaPembayaran,
-                'status_pengerjaan' => $validatedTransaksi['status_pengerjaan'],
-            ]);
-
-            if ($request->has('nama_produk') && is_array($request->input('nama_produk'))) {
-                foreach ($request->input('nama_produk') as $key => $nama_produk) {
-                    TransaksiDetail::create([
-                        'transaksi_id' => $transaksi->id,
-                        'produk_id' => $request->input('produk_id.' . $key),
-                        'nama_produk' => $nama_produk,
-                        'keterangan' => $request->input('keterangan.' . $key),
-                        'qty' => $request->input('qty.' . $key),
-                        'ukuran' => $request->input('ukuran.' . $key),
-                        'satuan' => $request->input('satuan.' . $key),
-                        'harga' => $request->input('harga.' . $key),
-                        'total' => $request->input('total_item.' . $key),
-                    ]);
+                if (isset($validatedData['nama_produk'])) {
+                    foreach ($validatedData['nama_produk'] as $key => $nama_produk) {
+                        TransaksiDetail::create([
+                            'transaksi_id' => $transaksi->id,
+                            'produk_id' => $validatedData['produk_id'][$key] ?? null,
+                            'nama_produk' => $nama_produk,
+                            'keterangan' => $validatedData['keterangan'][$key] ?? null,
+                            'qty' => $validatedData['qty'][$key],
+                            'ukuran' => $validatedData['ukuran'][$key] ?? null,
+                            'satuan' => $validatedData['satuan'][$key] ?? null,
+                            'harga' => $validatedData['harga'][$key],
+                            'total' => $validatedData['total_item'][$key],
+                        ]);
+                    }
                 }
-            }
+            });
 
-            DB::commit();
             return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil disimpan!');
         } catch (ValidationException $e) {
-            DB::rollBack();
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
-            DB::rollBack();
             return redirect()->back()->with('error', 'Terjadi kesalahan server: ' . $e->getMessage())->withInput();
         }
     }
@@ -186,30 +141,7 @@ class TransaksiController extends Controller
     {
         $transaksi = Transaksi::findOrFail($id);
         try {
-            // PERBAIKAN: Menggunakan fungsi cleanCurrencyValue
-            $request->merge([
-                'total_keseluruhan' => $this->cleanCurrencyValue($request->input('total_keseluruhan')),
-                'uang_muka' => $this->cleanCurrencyValue($request->input('uang_muka')),
-                'diskon' => $this->cleanCurrencyValue($request->input('diskon')),
-                'sisa' => $this->cleanCurrencyValue($request->input('sisa')),
-            ]);
-
-            if ($request->has('harga') && is_array($request->input('harga'))) {
-                $cleanedHarga = [];
-                foreach ($request->input('harga') as $key => $value) {
-                    $cleanedHarga[$key] = $this->cleanCurrencyValue($value);
-                }
-                $request->merge(['harga' => $cleanedHarga]);
-            }
-            if ($request->has('total_item') && is_array($request->input('total_item'))) {
-                $cleanedTotalItem = [];
-                foreach ($request->input('total_item') as $key => $value) {
-                    $cleanedTotalItem[$key] = $this->cleanCurrencyValue($value);
-                }
-                $request->merge(['total_item' => $cleanedTotalItem]);
-            }
-
-            $validatedTransaksi = $request->validate([
+            $validatedData = $request->validate([
                 'no_transaksi' => 'required|string|max:255|unique:transaksi,no_transaksi,' . $transaksi->id,
                 'pelanggan_id' => 'nullable|exists:pelanggan,id',
                 'tanggal_order' => 'required|date',
@@ -217,9 +149,8 @@ class TransaksiController extends Controller
                 'total_keseluruhan' => 'required|numeric|min:0',
                 'uang_muka' => 'nullable|numeric|min:0',
                 'diskon' => 'nullable|numeric|min:0',
+                'sisa' => 'required|numeric|min:0',
                 'status_pengerjaan' => 'required|in:menunggu export,belum dikerjakan,proses desain,proses produksi,selesai',
-            ]);
-            $request->validate([
                 'produk_id.*' => 'nullable|exists:produk,id',
                 'nama_produk.*' => 'required|string|max:255',
                 'keterangan.*' => 'nullable|string',
@@ -230,46 +161,42 @@ class TransaksiController extends Controller
                 'total_item.*' => 'required|numeric|min:0',
             ]);
 
-            DB::beginTransaction();
-            $sisaPembayaran = ($validatedTransaksi['total_keseluruhan'] - ($validatedTransaksi['uang_muka'] ?? 0) - ($validatedTransaksi['diskon'] ?? 0));
-            if ($sisaPembayaran < 0) $sisaPembayaran = 0;
+            DB::transaction(function () use ($transaksi, $validatedData) {
+                $transaksi->update([
+                    'no_transaksi' => $validatedData['no_transaksi'],
+                    'pelanggan_id' => $validatedData['pelanggan_id'],
+                    'tanggal_order' => $validatedData['tanggal_order'],
+                    'tanggal_selesai' => $validatedData['tanggal_selesai'],
+                    'total' => $validatedData['total_keseluruhan'],
+                    'uang_muka' => $validatedData['uang_muka'] ?? 0,
+                    'diskon' => $validatedData['diskon'] ?? 0,
+                    'sisa' => $validatedData['sisa'],
+                    'status_pengerjaan' => $validatedData['status_pengerjaan'],
+                ]);
 
-            $transaksi->update([
-                'no_transaksi' => $validatedTransaksi['no_transaksi'],
-                'pelanggan_id' => $validatedTransaksi['pelanggan_id'],
-                'tanggal_order' => $validatedTransaksi['tanggal_order'],
-                'tanggal_selesai' => $validatedTransaksi['tanggal_selesai'],
-                'total' => $validatedTransaksi['total_keseluruhan'],
-                'uang_muka' => $validatedTransaksi['uang_muka'] ?? 0,
-                'diskon' => $validatedTransaksi['diskon'] ?? 0,
-                'sisa' => $sisaPembayaran,
-                'status_pengerjaan' => $validatedTransaksi['status_pengerjaan'],
-            ]);
-
-            $transaksi->transaksiDetails()->delete();
-            if ($request->has('nama_produk') && is_array($request->input('nama_produk'))) {
-                foreach ($request->input('nama_produk') as $key => $nama_produk) {
-                    TransaksiDetail::create([
-                        'transaksi_id' => $transaksi->id,
-                        'produk_id' => $request->input('produk_id.' . $key),
-                        'nama_produk' => $nama_produk,
-                        'keterangan' => $request->input('keterangan.' . $key),
-                        'qty' => $request->input('qty.' . $key),
-                        'ukuran' => $request->input('ukuran.' . $key),
-                        'satuan' => $request->input('satuan.' . $key),
-                        'harga' => $request->input('harga.' . $key),
-                        'total' => $request->input('total_item.' . $key),
-                    ]);
+                $transaksi->transaksiDetails()->delete();
+                
+                if (isset($validatedData['nama_produk'])) {
+                    foreach ($validatedData['nama_produk'] as $key => $nama_produk) {
+                        TransaksiDetail::create([
+                            'transaksi_id' => $transaksi->id,
+                            'produk_id' => $validatedData['produk_id'][$key] ?? null,
+                            'nama_produk' => $nama_produk,
+                            'keterangan' => $validatedData['keterangan'][$key] ?? null,
+                            'qty' => $validatedData['qty'][$key],
+                            'ukuran' => $validatedData['ukuran'][$key] ?? null,
+                            'satuan' => $validatedData['satuan'][$key] ?? null,
+                            'harga' => $validatedData['harga'][$key],
+                            'total' => $validatedData['total_item'][$key],
+                        ]);
+                    }
                 }
-            }
+            });
 
-            DB::commit();
             return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil diperbarui!');
         } catch (ValidationException $e) {
-            DB::rollBack();
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
-            DB::rollBack();
             return redirect()->back()->with('error', 'Terjadi kesalahan server: ' . $e->getMessage())->withInput();
         }
     }
