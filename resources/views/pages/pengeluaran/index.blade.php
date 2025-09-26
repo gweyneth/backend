@@ -26,7 +26,7 @@
                     <a href="{{ route('pengeluaran.create') }}" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus mr-1"></i> Tambah Pengeluaran
                     </a>
-                    <a href="{{ route('pengeluaran.export.excel', request()->query()) }}" class="btn btn-success btn-sm mr-2">
+                    <a href="{{ route('pengeluaran.export.excel', request()->query()) }}" class="btn btn-success btn-sm">
                         <i class="fas fa-file-excel mr-1"></i> Ekspor Excel
                     </a>
                 </div>
@@ -113,18 +113,20 @@
                             @endforelse
                         </tbody>
                         @if($pengeluaran->isNotEmpty())
+                        {{-- PERBAIKAN 2: Label total diubah menjadi lebih akurat --}}
                         <tfoot class="bg-light">
                             <tr>
-                                <th colspan="4" class="text-right">Total Pengeluaran (Halaman Ini):</th>
-                                <th colspan="3">Rp{{ number_format($totalPengeluaran, 0, ',', '.') }}</th>
+                                <th colspan="4" class="text-right">Total Pengeluaran (Semua Halaman):</th>
+                                <th colspan="3"><strong>Rp{{ number_format($totalPengeluaran, 0, ',', '.') }}</strong></th>
                             </tr>
                         </tfoot>
                         @endif
                     </table>
                 </div>
 
+                {{-- PERBAIKAN 1: Mengaktifkan kembali link pagination --}}
                 <div class="d-flex justify-content-center mt-3">
-                    {{-- {{ $pengeluaran->appends(request()->query())->links() }} --}}
+                    {{ $pengeluaran->appends(request()->query())->links() }}
                 </div>
             </div>
         </div>
