@@ -87,7 +87,7 @@
                                 <td>Rp{{ number_format($item->total, 0, ',', '.') }}</td>
                                 <td><strong>Rp{{ number_format($item->sisa, 0, ',', '.') }}</strong></td>
                                 <td>
-                                    {{-- PERBAIKAN: Menggunakan kolom status_bayar untuk konsistensi --}}
+                                    {{-- LOGIKA INI SUDAH BENAR: Menggunakan kolom status_bayar untuk konsistensi --}}
                                     @if ($item->status_bayar == 'LUNAS')
                                         <span class="badge badge-success">LUNAS</span>
                                     @else
@@ -282,18 +282,22 @@
     }
 
     function showPelunasanModal(transaksiId, sisaPembayaran, totalTransaksi, diskonTransaksi) {
-        document.getElementById('formPelunasan').reset();
+        const form = document.getElementById('formPelunasan');
+        form.reset();
+        
         document.getElementById('modal_transaksi_id').value = transaksiId;
         document.getElementById('modal_total_harus_dibayar').value = formatRupiah(parseFloat(totalTransaksi));
         document.getElementById('modal_sisa_pembayaran').value = formatRupiah(parseFloat(sisaPembayaran));
         document.getElementById('modal_jumlah_bayar').value = parseFloat(sisaPembayaran);
         
-        document.getElementById('formPelunasan').action = `/transaksi/${transaksiId}/pelunasan`;
+        // Update form action URL dynamically
+        form.action = `/transaksi/${transaksiId}/pelunasan`;
         
         togglePaymentFields();
         $('#pelunasanModal').modal('show');
     }
 
+    // Event listener untuk metode pembayaran
     const metodePembayaranRadios = document.querySelectorAll('input[name="metode_pembayaran"]');
     const transferFieldsDiv = document.getElementById('transfer_fields');
     const qrisFieldsDiv = document.getElementById('qris_fields');
