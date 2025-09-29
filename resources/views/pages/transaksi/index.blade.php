@@ -87,7 +87,8 @@
                                 <td>Rp{{ number_format($item->total, 0, ',', '.') }}</td>
                                 <td><strong>Rp{{ number_format($item->sisa, 0, ',', '.') }}</strong></td>
                                 <td>
-                                    @if ($item->sisa <= 0)
+                                    {{-- PERBAIKAN: Menggunakan kolom status_bayar untuk konsistensi --}}
+                                    @if ($item->status_bayar == 'LUNAS')
                                         <span class="badge badge-success">LUNAS</span>
                                     @else
                                         <span class="badge badge-warning">BELUM LUNAS</span>
@@ -119,8 +120,8 @@
                                             <i class="fas fa-cog"></i>
                                         </button>
                                         <div class="dropdown-menu dropdown-menu-right">
-                                            <a class="dropdown-item" href="{{ route('transaksi.print-receipt', $item->id) }}" target="_blank"><i class="fas fa-print fa-fw mr-2"></i>Cetak Struk</a>
-                                            <a class="dropdown-item" href="{{ route('transaksi.print-invoice', $item->id) }}" target="_blank"><i class="fas fa-file-invoice fa-fw mr-2"></i>Cetak Invoice</a>
+                                            <a class="dropdown-item" href="{{-- route('transaksi.print-receipt', $item->id) --}}" target="_blank"><i class="fas fa-print fa-fw mr-2"></i>Cetak Struk</a>
+                                            <a class="dropdown-item" href="{{-- route('transaksi.print-invoice', $item->id) --}}" target="_blank"><i class="fas fa-file-invoice fa-fw mr-2"></i>Cetak Invoice</a>
                                             <div class="dropdown-divider"></div>
                                             <button class="dropdown-item text-danger" type="button" onclick="confirmDelete('{{ $item->id }}', '{{ $item->no_transaksi }}')">
                                                 <i class="fas fa-trash-alt fa-fw mr-2"></i>Hapus Transaksi
@@ -139,8 +140,8 @@
                         <tfoot class="bg-light">
                             <tr>
                                 <th colspan="3" class="text-right">Total (Halaman Ini):</th>
-                                <th>Rp{{ number_format($totalKeseluruhanTransaksi, 0, ',', '.') }}</th>
-                                <th>Rp{{ number_format($totalPiutang, 0, ',', '.') }}</th>
+                                <th>Rp{{ number_format($transaksi->sum('total'), 0, ',', '.') }}</th>
+                                <th>Rp{{ number_format($transaksi->sum('sisa'), 0, ',', '.') }}</th>
                                 <th colspan="3"></th>
                             </tr>
                         </tfoot>
@@ -154,6 +155,8 @@
         </div>
     </div>
 </div>
+
+{{-- Modal Pelunasan --}}
 <div class="modal fade" id="pelunasanModal" tabindex="-1" role="dialog" aria-labelledby="pelunasanModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -221,7 +224,7 @@
                     <div id="qris_fields" style="display: none;">
                         <div class="form-group text-center">
                             <label>Scan QRIS untuk Pembayaran</label>
-                            <img id="qrisImage" src="{{ $perusahaan->qr_code ? asset('storage/' . $perusahaan->qr_code) : 'https://placehold.co/200x200/cccccc/333333?text=QRIS+Not+Available' }}" alt="QRIS Code" class="img-fluid" style="max-width: 200px; margin: 0 auto;">
+                            <img id="qrisImage" src="{{ $perusahaan && $perusahaan->qr_code ? asset('storage/' . $perusahaan->qr_code) : 'https://placehold.co/200x200/cccccc/333333?text=QRIS+Not+Available' }}" alt="QRIS Code" class="img-fluid" style="max-width: 200px; margin: 0 auto;">
                         </div>
                     </div>
 
@@ -232,7 +235,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary">Proses Pelunasan</button>
+                    <button type="submit" class="btn btn-primary">Proses Pembayaran</button>
                 </div>
             </form>
         </div>
@@ -306,7 +309,6 @@
 
         if (selectedMethod === 'transfer_bank') {
             transferFieldsDiv.style.display = 'block';
-            buktiPembayaranInput.setAttribute('required', 'required');
             rekeningIdSelect.setAttribute('required', 'required');
         } else if (selectedMethod === 'qris') {
             qrisFieldsDiv.style.display = 'block';

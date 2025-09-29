@@ -97,6 +97,9 @@ class TransaksiController extends Controller
             ]);
 
             DB::transaction(function () use ($validatedData) {
+                // Menentukan status bayar berdasarkan sisa
+                $status_bayar = ($validatedData['sisa'] == 0) ? 'LUNAS' : 'BELUM LUNAS';
+
                 $transaksi = Transaksi::create([
                     'no_transaksi' => $validatedData['no_transaksi'],
                     'pelanggan_id' => $validatedData['pelanggan_id'],
@@ -107,6 +110,7 @@ class TransaksiController extends Controller
                     'diskon' => $validatedData['diskon'] ?? 0,
                     'sisa' => $validatedData['sisa'],
                     'status_pengerjaan' => $validatedData['status_pengerjaan'],
+                    'status_bayar' => $status_bayar, // Menambahkan status bayar saat create
                 ]);
 
                 if (isset($validatedData['nama_produk'])) {
@@ -182,6 +186,9 @@ class TransaksiController extends Controller
             ]);
 
             DB::transaction(function () use ($transaksi, $validatedData) {
+                // Menentukan status bayar berdasarkan sisa
+                $status_bayar = ($validatedData['sisa'] == 0) ? 'LUNAS' : 'BELUM LUNAS';
+
                 $transaksi->update([
                     'no_transaksi' => $validatedData['no_transaksi'],
                     'pelanggan_id' => $validatedData['pelanggan_id'],
@@ -192,6 +199,7 @@ class TransaksiController extends Controller
                     'diskon' => $validatedData['diskon'] ?? 0,
                     'sisa' => $validatedData['sisa'],
                     'status_pengerjaan' => $validatedData['status_pengerjaan'],
+                    'status_bayar' => $status_bayar, // Menambahkan status bayar saat update
                 ]);
 
                 $transaksi->transaksiDetails()->delete();
@@ -222,11 +230,77 @@ class TransaksiController extends Controller
     }
 
     /**
+     * METHOD DIPERBARUI: Memproses pembayaran dan pelunasan.
+     */
+    public function pelunasan(Request $request, int $id)
+    {
+        $transaksi = Transaksi::findOrFail($id);
+
+        $rules = [
+            'jumlah_bayar' => 'required|numeric|min:1',
+            'metode_pembayaran' => 'required|in:tunai,transfer_bank,qris',
+            'keterangan_pembayaran' => 'nullable|string',
+        ];
+
+        if ($request->input('metode_pembayaran') === 'transfer_bank') {
+            $rules['rekening_id'] = 'required|exists:rekening,id';
+            // Jadikan bukti pembayaran opsional jika diperlukan
+            $rules['bukti_pembayaran'] = 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048';
+        }
+
+        $request->validate($rules);
+
+        try {
+            DB::transaction(function () use ($request, $transaksi) {
+                $jumlahBayar = (float) $request->input('jumlah_bayar');
+
+                // Update uang muka dan sisa
+                $transaksi->uang_muka += $jumlahBayar;
+                $transaksi->sisa -= $jumlahBayar;
+
+                // Pastikan sisa tidak menjadi negatif
+                if ($transaksi->sisa < 0) {
+                    $transaksi->sisa = 0;
+                }
+                
+                // Update status bayar jika sisa 0
+                if ($transaksi->sisa == 0) {
+                    $transaksi->status_bayar = 'LUNAS';
+                }
+
+                // Simpan detail pembayaran
+                $transaksi->metode_pembayaran = $request->input('metode_pembayaran');
+                if ($request->input('metode_pembayaran') === 'transfer_bank') {
+                    $transaksi->rekening_id = $request->input('rekening_id');
+                    if ($request->hasFile('bukti_pembayaran')) {
+                        // Hapus bukti lama jika ada
+                        if ($transaksi->bukti_pembayaran && Storage::disk('public')->exists($transaksi->bukti_pembayaran)) {
+                            Storage::disk('public')->delete($transaksi->bukti_pembayaran);
+                        }
+                        // Simpan bukti baru
+                        $path = $request->file('bukti_pembayaran')->store('bukti_pembayaran', 'public');
+                        $transaksi->bukti_pembayaran = $path;
+                    }
+                }
+                
+                $transaksi->save();
+            });
+
+            $pesan = ($transaksi->status_bayar == 'LUNAS') ? 'berhasil dilunasi' : 'berhasil dibayar sebagian';
+            return redirect()->back()->with('success', 'Transaksi ' . $transaksi->no_transaksi . ' ' . $pesan . '.');
+
+        } catch (ValidationException $e) {
+            return redirect()->back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal memproses pembayaran: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Menghapus data transaksi.
      */
     public function destroy(int $id)
     {
-        // PERBAIKAN: Menggunakan DB::transaction closure agar lebih aman
         try {
             DB::transaction(function() use ($id) {
                 $transaksi = Transaksi::findOrFail($id);
@@ -276,7 +350,6 @@ class TransaksiController extends Controller
      */
     public function piutangIndex()
     {
-        // PERBAIKAN: Mengurutkan dari data terlama (ascending)
         $piutangTransaksi = Transaksi::with('pelanggan')
             ->where('sisa', '>', 0)
             ->orderBy('id', 'asc')
@@ -291,7 +364,6 @@ class TransaksiController extends Controller
      */
     public function pendapatanIndex(Request $request)
     {
-        // Mengubah urutan dari terbaru (latest) menjadi terlama (ascending)
         $query = Transaksi::with(['pelanggan', 'rekening'])
             ->where(function ($q) {
                 $q->where('sisa', '=', 0)->orWhere('uang_muka', '>', 0);
@@ -322,7 +394,6 @@ class TransaksiController extends Controller
     public function exportExcelPendapatan(Request $request)
     {
         $filters = $request->all();
-        // Pastikan class PendapatanExport sudah dibuat dan sesuai
         return Excel::download(new PendapatanExport($filters), 'laporan-pendapatan-' . date('d-m-Y') . '.xlsx');
     }
 
@@ -332,7 +403,6 @@ class TransaksiController extends Controller
     public function exportExcel(Request $request)
     {
         $fileName = 'transaksi_' . date('Ymd_His') . '.xlsx';
-        // Pastikan class TransaksiExport sudah dibuat dan sesuai
         return Excel::download(new TransaksiExport($request->query()), $fileName);
     }
 }
